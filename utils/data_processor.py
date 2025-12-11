@@ -33,12 +33,18 @@ class StudentMarksProcessor:
     
     def _get_subject_columns(self) -> List[str]:
         """
-        Get list of subject columns (all columns except 'Student Name').
+        Get list of subject columns (excludes student metadata columns).
         
         Returns:
             List[str]: List of subject column names
         """
-        return [col for col in self.df.columns if col != 'Student Name']
+        # Define metadata columns that should not be treated as subjects
+        metadata_columns = [
+            'Student Name', 'Seat No.', 'Enrollment No.', 'SP ID', 
+            'College Name', 'Exam Name', 'Student ID', 'Roll No.',
+            'Overall Status', 'Passed Subjects', 'Failed Subjects'
+        ]
+        return [col for col in self.df.columns if col not in metadata_columns]
     
     def calculate_overall_status(self) -> pd.DataFrame:
         """
@@ -92,26 +98,44 @@ class StudentMarksProcessor:
     def filter_passed_students(self) -> pd.DataFrame:
         """
         Filter students who passed overall (passed in all subjects).
+        Returns only student identity columns in specified order.
         
         Returns:
-            pd.DataFrame: Dataframe containing only students who passed all subjects
+            pd.DataFrame: Dataframe with student info for those who passed all subjects
         """
         df_with_status = self.calculate_overall_status()
-        # Return original data columns plus status columns
-        result_cols = list(self.df.columns) + ['Overall Status', 'Passed Subjects', 'Failed Subjects']
-        return df_with_status[df_with_status['Overall Status'] == 'Pass'][result_cols].copy()
+        
+        # Filter only passed students
+        passed_df = df_with_status[df_with_status['Overall Status'] == 'Pass'].copy()
+        
+        # Define desired column order: Student Name, Seat No., Enrollment No., SP ID, Exam Name, Passed Subjects, Overall Status
+        desired_order = ['Student Name', 'Seat No.', 'Enrollment No.', 'SP ID', 'Exam Name', 'Passed Subjects', 'Overall Status']
+        
+        # Select only columns that exist in the dataframe, in the desired order
+        result_cols = [col for col in desired_order if col in passed_df.columns]
+        
+        return passed_df[result_cols]
     
     def filter_failed_students(self) -> pd.DataFrame:
         """
         Filter students who failed overall (failed in at least one subject).
+        Returns only student identity columns in specified order.
         
         Returns:
-            pd.DataFrame: Dataframe containing only students who failed at least one subject
+            pd.DataFrame: Dataframe with student info for those who failed at least one subject
         """
         df_with_status = self.calculate_overall_status()
-        # Return original data columns plus status columns
-        result_cols = list(self.df.columns) + ['Overall Status', 'Passed Subjects', 'Failed Subjects']
-        return df_with_status[df_with_status['Overall Status'] == 'Fail'][result_cols].copy()
+        
+        # Filter only failed students
+        failed_df = df_with_status[df_with_status['Overall Status'] == 'Fail'].copy()
+        
+        # Define desired column order: Student Name, Seat No., Enrollment No., SP ID, Exam Name, Failed Subjects, Overall Status
+        desired_order = ['Student Name', 'Seat No.', 'Enrollment No.', 'SP ID', 'Exam Name', 'Failed Subjects', 'Overall Status']
+        
+        # Select only columns that exist in the dataframe, in the desired order
+        result_cols = [col for col in desired_order if col in failed_df.columns]
+        
+        return failed_df[result_cols]
     
     def filter_subject_wise_pass(self, subject: str) -> pd.DataFrame:
         """
