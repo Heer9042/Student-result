@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Marks Management System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .upload-section {
+            margin-bottom: 40px;
+        }
+        
+        .upload-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .upload-box {
+            border: 3px dashed #667eea;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            background: #f8f9ff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-box:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+        }
+        
+        .upload-box p {
+            color: #666;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+        
+        .upload-box input[type="file"] {
+            display: none;
+        }
+        
+        .upload-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .upload-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        #fileName {
+            margin-top: 15px;
+            color: #667eea;
+            font-weight: bold;
+        }
+        
+        .statistics-section {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .statistics-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .stat-value {
+            color: #667eea;
+            font-size: 1.8em;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        
+        .filter-section {
+            margin-top: 40px;
+            display: none;
+        }
+        
+        .filter-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .filter-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .filter-btn {
+            padding: 15px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .filter-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        .filter-btn.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .subject-selector {
+            margin-bottom: 20px;
+        }
+        
+        .subject-selector label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: bold;
+        }
+        
+        .subject-selector select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+        
+        .results-section {
+            margin-top: 30px;
+            display: none;
+        }
+        
+        .results-section h2 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        .filter-description {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            color: #1976d2;
+            font-weight: bold;
+        }
+        
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            overflow-x: auto;
+        }
+        
+        .results-table thead {
+            background: #667eea;
+            color: white;
+        }
+        
+        .results-table th,
+        .results-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .results-table tbody tr:nth-child(even) {
+            background: #f8f9ff;
+        }
+        
+        .results-table tbody tr:hover {
+            background: #f0f2ff;
+        }
+        
+        .download-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-right: 10px;
+        }
+        
+        .download-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .clear-btn {
+            background: #ff6b6b;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .clear-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .alert.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .alert.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 30px;
+            color: #666;
+            font-size: 1.1em;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                padding: 20px;
+            }
+            
+            header h1 {
+                font-size: 1.8em;
+            }
+            
+            .filter-buttons {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Student Marks Management</h1>
+            <p>Upload, analyze, and filter student performance data</p>
+        </header>
+        
+        <div class="content">
+            <!-- Alert Messages -->
+            <div id="alertMessage" class="alert"></div>
+            
+            <!-- Upload Section -->
+            <div class="upload-section">
+                <h2>Step 1: Upload File</h2>
+                <div class="upload-box" onclick="document.getElementById('fileInput').click()">
+                    <p>📁 Drag & drop your CSV or PDF file here</p>
+                    <p style="font-size: 0.9em; color: #999;">Or click to browse</p>
+                    <button type="button" class="upload-btn">Choose File</button>
+                    <input type="file" id="fileInput" accept=".csv,.pdf">
+                    <div id="fileName"></div>
+                </div>
+                
+                <!-- Statistics Section -->
+                <div id="statisticsSection" class="statistics-section">
+                    <h3>📈 Initial Statistics</h3>
+                    <div id="statisticsContainer" class="stats-grid"></div>
+                </div>
+            </div>
+            
+            <!-- Filter Section -->
+            <div id="filterSection" class="filter-section">
+                <h2>Step 2: Filter Data</h2>
+                
+                <div class="filter-buttons">
+                    <button type="button" class="filter-btn" onclick="applyFilter('overall_pass')">
+                        ✅ Passed Students (All Subjects)
+                    </button>
+                    <button type="button" class="filter-btn" onclick="applyFilter('overall_fail')">
+                        ❌ Failed Students (At Least One Subject)
+                    </button>
+                    <button type="button" class="filter-btn" onclick="showSubjectFilter('subject_pass')">
+                        📚 Pass in Subject
+                    </button>
+                    <button type="button" class="filter-btn" onclick="showSubjectFilter('subject_fail')">
+                        🚫 Fail in Subject
+                    </button>
+                    <button type="button" class="filter-btn" onclick="applyFilter('summary')">
+                        📊 Subject-wise Summary
+                    </button>
+                    <button type="button" class="filter-btn" onclick="applyFilter('statistics')">
+                        🔢 Statistics
+                    </button>
+                </div>
+                
+                <!-- Subject Selector -->
+                <div id="subjectSelector" class="subject-selector" style="display: none;">
+                    <label for="subjectSelect">Select Subject:</label>
+                    <select id="subjectSelect" onchange="applySubjectFilter()">
+                        <option value="">-- Choose Subject --</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Loading Indicator -->
+            <div id="loadingIndicator" class="loading">
+                <div class="spinner"></div>
+                <p>Processing...</p>
+            </div>
+            
+            <!-- Results Section -->
+            <div id="resultsSection" class="results-section">
+                <h2>Results</h2>
+                <div id="filterDescription" class="filter-description"></div>
+                
+                <div id="statisticsResults"></div>
+                
+                <div id="tableContainer">
+                    <table id="resultsTable" class="results-table">
+                        <thead></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                
+                <div id="noDataMessage" class="no-data" style="display: none;">
+                    No records found matching the filter criteria
+                </div>
+                
+                <div class="button-group">
+                    <button type="button" class="download-btn" id="downloadBtn" onclick="downloadResults()">
+                        ⬇️ Download as CSV
+                    </button>
+                    <button type="button" class="clear-btn" onclick="clearSession()">
+                        🔄 Upload New File
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let subjects = [];
+        let currentFilterType = null;
+        
+        // Handle file input change
+        document.getElementById('fileInput').addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                document.getElementById('fileName').textContent = `✓ Selected: ${file.name}`;
+                uploadFile(file);
+            }
+        });
+        
+        // Handle drag and drop
+        const uploadBox = document.querySelector('.upload-box');
+        uploadBox.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadBox.style.borderColor = '#764ba2';
+            uploadBox.style.background = '#f0f2ff';
+        });
+        
+        uploadBox.addEventListener('dragleave', () => {
+            uploadBox.style.borderColor = '#667eea';
+            uploadBox.style.background = '#f8f9ff';
+        });
+        
+        uploadBox.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadBox.style.borderColor = '#667eea';
+            uploadBox.style.background = '#f8f9ff';
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                document.getElementById('fileInput').files = e.dataTransfer.files;
+                document.getElementById('fileName').textContent = `✓ Selected: ${file.name}`;
+                uploadFile(file);
+            }
+        });
+        
+        function showAlert(message, type = 'info') {
+            const alert = document.getElementById('alertMessage');
+            alert.textContent = message;
+            alert.className = `alert ${type}`;
+            alert.style.display = 'block';
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 5000);
+        }
+        
+        function uploadFile(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            showLoading(true);
+            
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                showLoading(false);
+                
+                if (data.success) {
+                    showAlert('File uploaded successfully! ✓', 'success');
+                    
+                    // Store subjects
+                    subjects = data.data.subjects;
+                    
+                    // Display statistics
+                    displayStatistics(data.data.statistics);
+                    
+                    // Show filter section
+                    document.getElementById('filterSection').style.display = 'block';
+                    document.getElementById('statisticsSection').style.display = 'block';
+                    
+                } else {
+                    showAlert(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                showLoading(false);
+                showAlert('Error uploading file: ' + error, 'error');
+            });
+        }
+        
+        function displayStatistics(stats) {
+            const container = document.getElementById('statisticsContainer');
+            container.innerHTML = '';
+            
+            for (const [key, value] of Object.entries(stats)) {
+                const card = document.createElement('div');
+                card.className = 'stat-card';
+                card.innerHTML = `
+                    <div class="stat-label">${key}</div>
+                    <div class="stat-value">${value}</div>
+                `;
+                container.appendChild(card);
+            }
+        }
+        
+        function showSubjectFilter(filterType) {
+            currentFilterType = filterType;
+            const selector = document.getElementById('subjectSelector');
+            const select = document.getElementById('subjectSelect');
+            
+            selector.style.display = 'block';
+            select.innerHTML = '<option value="">-- Choose Subject --</option>';
+            
+            subjects.forEach(subject => {
+                const option = document.createElement('option');
+                option.value = subject;
+                option.textContent = subject;
+                select.appendChild(option);
+            });
+        }
+        
+        function applySubjectFilter() {
+            const subject = document.getElementById('subjectSelect').value;
+            if (!subject) {
+                showAlert('Please select a subject', 'error');
+                return;
+            }
+            applyFilter(currentFilterType, subject);
+        }
+        
+        function applyFilter(filterType, subject = null) {
+            const payload = {
+                filter_type: filterType
+            };
+            
+            if (subject) {
+                payload.subject = subject;
+            }
+            
+            showLoading(true);
+            
+            fetch('/filter', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(response => response.json())
+            .then(data => {
+                showLoading(false);
+                
+                if (data.success) {
+                    if (filterType === 'statistics') {
+                        displayStatisticsResults(data.statistics);
+                    } else {
+                        displayResults(data.data, data.filter_description);
+                    }
+                    
+                    document.getElementById('subjectSelector').style.display = 'none';
+                } else {
+                    showAlert(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                showLoading(false);
+                showAlert('Error applying filter: ' + error, 'error');
+            });
+        }
+        
+        function displayResults(data, filterDescription) {
+            document.getElementById('filterDescription').textContent = filterDescription;
+            document.getElementById('statisticsResults').innerHTML = '';
+            
+            const resultsSection = document.getElementById('resultsSection');
+            const tableContainer = document.getElementById('tableContainer');
+            const noDataMessage = document.getElementById('noDataMessage');
+            
+            if (!data || data.length === 0) {
+                tableContainer.style.display = 'none';
+                noDataMessage.style.display = 'block';
+            } else {
+                tableContainer.style.display = 'block';
+                noDataMessage.style.display = 'none';
+                
+                const table = document.getElementById('resultsTable');
+                const thead = table.querySelector('thead');
+                const tbody = table.querySelector('tbody');
+                
+                // Create table header
+                thead.innerHTML = '';
+                const columns = Object.keys(data[0]);
+                const headerRow = document.createElement('tr');
+                columns.forEach(col => {
+                    const th = document.createElement('th');
+                    th.textContent = col;
+                    headerRow.appendChild(th);
+                });
+                thead.appendChild(headerRow);
+                
+                // Create table rows
+                tbody.innerHTML = '';
+                data.forEach(row => {
+                    const tr = document.createElement('tr');
+                    columns.forEach(col => {
+                        const td = document.createElement('td');
+                        td.textContent = row[col];
+                        tr.appendChild(td);
+                    });
+                    tbody.appendChild(tr);
+                });
+            }
+            
+            resultsSection.style.display = 'block';
+        }
+        
+        function displayStatisticsResults(stats) {
+            const container = document.getElementById('statisticsResults');
+            container.innerHTML = '<h3>Class Statistics</h3>';
+            
+            const statsDiv = document.createElement('div');
+            statsDiv.className = 'stats-grid';
+            
+            for (const [key, value] of Object.entries(stats)) {
+                const card = document.createElement('div');
+                card.className = 'stat-card';
+                card.innerHTML = `
+                    <div class="stat-label">${key}</div>
+                    <div class="stat-value">${value}</div>
+                `;
+                statsDiv.appendChild(card);
+            }
+            
+            container.appendChild(statsDiv);
+            document.getElementById('resultsSection').style.display = 'block';
+            document.getElementById('tableContainer').style.display = 'none';
+        }
+        
+        function downloadResults() {
+            window.location.href = '/download';
+        }
+        
+        function clearSession() {
+            showLoading(true);
+            
+            fetch('/clear-session', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                showLoading(false);
+                if (data.success) {
+                    location.reload();
+                } else {
+                    showAlert(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                showLoading(false);
+                showAlert('Error: ' + error, 'error');
+            });
+        }
+        
+        function showLoading(show) {
+            document.getElementById('loadingIndicator').style.display = show ? 'block' : 'none';
+        }
+    </script>
+</body>
+</html>
