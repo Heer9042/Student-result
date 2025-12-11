@@ -221,7 +221,7 @@ def filter_data():
                 'success': True,
                 'message': 'Summary generated successfully',
                 'filter_description': 'Subject-wise Pass/Fail Summary',
-                'data': summary_df.to_dict('records'),
+                'data': summary_df.fillna('').to_dict('records'),
                 'rows': len(summary_df)
             }), 200
             
@@ -287,7 +287,7 @@ def filter_data():
             'success': True,
             'message': f'Filter applied successfully',
             'filter_description': filter_description,
-            'data': page_df.to_dict('records'),
+            'data': page_df.fillna('').to_dict('records'),
             'rows': len(page_df),
             'page': page,
             'per_page': per_page,
