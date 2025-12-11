@@ -125,14 +125,17 @@ class StudentMarksProcessor:
         """
         if subject not in self.subject_columns:
             raise ValueError(f"Subject '{subject}' not found in data")
-        
-        result_df = self.df.copy()
-        result_df['Status in ' + subject] = result_df[subject].apply(
+
+        # Use dataframe with overall status to include pass/fail counts
+        df_with_status = self.calculate_overall_status()
+        # Add subject-specific status
+        df_with_status['Status in ' + subject] = df_with_status[subject].apply(
             lambda x: 'Pass' if pd.notna(x) and x >= self.pass_threshold else 'Fail'
         )
-        
-        # Return original columns only for cleaner output
-        return result_df[result_df['Status in ' + subject] == 'Pass'][list(self.df.columns)].copy()
+
+        # Return full details: original columns + subject status and overall columns
+        result_cols = list(self.df.columns) + ['Status in ' + subject, 'Overall Status', 'Passed Subjects', 'Failed Subjects']
+        return df_with_status[df_with_status['Status in ' + subject] == 'Pass'][result_cols].copy()
     
     def filter_subject_wise_fail(self, subject: str) -> pd.DataFrame:
         """
@@ -146,14 +149,14 @@ class StudentMarksProcessor:
         """
         if subject not in self.subject_columns:
             raise ValueError(f"Subject '{subject}' not found in data")
-        
-        result_df = self.df.copy()
-        result_df['Status in ' + subject] = result_df[subject].apply(
+
+        df_with_status = self.calculate_overall_status()
+        df_with_status['Status in ' + subject] = df_with_status[subject].apply(
             lambda x: 'Pass' if pd.notna(x) and x >= self.pass_threshold else 'Fail'
         )
-        
-        # Return original columns only for cleaner output
-        return result_df[result_df['Status in ' + subject] == 'Fail'][list(self.df.columns)].copy()
+
+        result_cols = list(self.df.columns) + ['Status in ' + subject, 'Overall Status', 'Passed Subjects', 'Failed Subjects']
+        return df_with_status[df_with_status['Status in ' + subject] == 'Fail'][result_cols].copy()
     
     def get_subject_wise_summary(self) -> pd.DataFrame:
         """

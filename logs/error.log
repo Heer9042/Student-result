@@ -1,0 +1,20 @@
+2025-12-11 08:56:59,666 ERROR: Exception in filter_data
+Traceback (most recent call last):
+  File "T:\python\student_marks_system\app.py", line 271, in filter_data
+    os.makedirs(app.config['DOWNLOAD_FOLDER'], exist_ok=True)
+KeyError: 'DOWNLOAD_FOLDER'
+2025-12-11 08:57:01,456 ERROR: Exception in filter_data
+Traceback (most recent call last):
+  File "T:\python\student_marks_system\app.py", line 271, in filter_data
+    os.makedirs(app.config['DOWNLOAD_FOLDER'], exist_ok=True)
+KeyError: 'DOWNLOAD_FOLDER'
+2025-12-11 08:57:05,542 ERROR: Exception in filter_data
+Traceback (most recent call last):
+  File "T:\python\student_marks_system\app.py", line 271, in filter_data
+    os.makedirs(app.config['DOWNLOAD_FOLDER'], exist_ok=True)
+KeyError: 'DOWNLOAD_FOLDER'
+2025-12-11 08:57:11,250 ERROR: Exception in filter_data
+Traceback (most recent call last):
+  File "T:\python\student_marks_system\app.py", line 271, in filter_data
+    os.makedirs(app.config['DOWNLOAD_FOLDER'], exist_ok=True)
+KeyError: 'DOWNLOAD_FOLDER'

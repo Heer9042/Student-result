@@ -447,13 +447,21 @@
                 </div>
                 
                 <div class="button-group">
-                    <button type="button" class="download-btn" id="downloadBtn" onclick="downloadResults()">
-                        ⬇️ Download as CSV
-                    </button>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <button type="button" class="download-btn" onclick="downloadResults('csv')">
+                            ⬇️ Download CSV
+                        </button>
+                        <button type="button" class="download-btn" onclick="downloadResults('pdf')">
+                            📄 Download PDF
+                        </button>
+                    </div>
                     <button type="button" class="clear-btn" onclick="clearSession()">
                         🔄 Upload New File
                     </button>
                 </div>
+
+                <!-- Pagination controls -->
+                <div id="paginationControls" style="margin-top:15px; display:none; align-items:center; gap:10px;"></div>
             </div>
         </div>
     </div>
@@ -514,32 +522,47 @@
             
             fetch('/upload', {
                 method: 'POST',
-                body: formData
+                body: formData,
+                credentials: 'same-origin'
             })
-            .then(response => response.json())
-            .then(data => {
+            .then(async response => {
                 showLoading(false);
-                
+                // Try to parse JSON body if present
+                let payload = null;
+                try {
+                    payload = await response.json();
+                } catch (err) {
+                    // Non-JSON response
+                    const text = await response.text().catch(() => 'Unknown server response');
+                    showAlert(`Upload failed: ${response.status} ${response.statusText} - ${text}`, 'error');
+                    return;
+                }
+
+                if (!response.ok) {
+                    // Server returned error status with JSON message
+                    const msg = payload && payload.message ? payload.message : `Upload failed: ${response.status} ${response.statusText}`;
+                    showAlert(msg, 'error');
+                    return;
+                }
+
+                const data = payload;
                 if (data.success) {
                     showAlert('File uploaded successfully! ✓', 'success');
-                    
                     // Store subjects
                     subjects = data.data.subjects;
-                    
                     // Display statistics
                     displayStatistics(data.data.statistics);
-                    
                     // Show filter section
                     document.getElementById('filterSection').style.display = 'block';
                     document.getElementById('statisticsSection').style.display = 'block';
-                    
                 } else {
-                    showAlert(data.message, 'error');
+                    const msg = data && data.message ? data.message : 'Upload failed';
+                    showAlert(msg, 'error');
                 }
             })
             .catch(error => {
                 showLoading(false);
-                showAlert('Error uploading file: ' + error, 'error');
+                showAlert('Error uploading file: ' + (error.message || error), 'error');
             });
         }
         
@@ -583,9 +606,11 @@
             applyFilter(currentFilterType, subject);
         }
         
-        function applyFilter(filterType, subject = null) {
+        function applyFilter(filterType, subject = null, page = 1, per_page = 10) {
             const payload = {
-                filter_type: filterType
+                filter_type: filterType,
+                page: page,
+                per_page: per_page
             };
             
             if (subject) {
@@ -596,6 +621,7 @@
             
             fetch('/filter', {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: {
                     'Content-Type': 'application/json'
                 },
@@ -609,7 +635,8 @@
                     if (filterType === 'statistics') {
                         displayStatisticsResults(data.statistics);
                     } else {
-                        displayResults(data.data, data.filter_description);
+                        // data now can be paginated; pass pagination metadata
+                        displayResults(data.data, data.filter_description, data.page, data.per_page, data.total_pages, data.total_rows);
                     }
                     
                     document.getElementById('subjectSelector').style.display = 'none';
@@ -623,7 +650,7 @@
             });
         }
         
-        function displayResults(data, filterDescription) {
+        function displayResults(data, filterDescription, page = 1, per_page = 10, total_pages = 1, total_rows = 0) {
             document.getElementById('filterDescription').textContent = filterDescription;
             document.getElementById('statisticsResults').innerHTML = '';
             
@@ -634,6 +661,7 @@
             if (!data || data.length === 0) {
                 tableContainer.style.display = 'none';
                 noDataMessage.style.display = 'block';
+                document.getElementById('paginationControls').style.display = 'none';
             } else {
                 tableContainer.style.display = 'block';
                 noDataMessage.style.display = 'none';
@@ -667,6 +695,46 @@
             }
             
             resultsSection.style.display = 'block';
+
+            // Render pagination controls
+            renderPagination(page, per_page, total_pages, total_rows);
+        }
+
+        function renderPagination(page, per_page, total_pages, total_rows) {
+            const container = document.getElementById('paginationControls');
+            if (!total_pages || total_pages <= 1) {
+                container.style.display = 'none';
+                return;
+            }
+            container.style.display = 'flex';
+            container.innerHTML = '';
+
+            const prev = document.createElement('button');
+            prev.textContent = '◀ Prev';
+            prev.className = 'filter-btn';
+            prev.disabled = page <= 1;
+            prev.onclick = function() {
+                var sel = document.getElementById('subjectSelect');
+                var subj = (sel && sel.value) ? sel.value : null;
+                applyFilter(currentFilterType, subj, page - 1, per_page);
+            };
+            container.appendChild(prev);
+
+            const info = document.createElement('div');
+            info.style.padding = '10px';
+            info.textContent = 'Page ' + page + ' of ' + total_pages + ' — ' + total_rows + ' rows';
+            container.appendChild(info);
+
+            const next = document.createElement('button');
+            next.textContent = 'Next ▶';
+            next.className = 'filter-btn';
+            next.disabled = page >= total_pages;
+            next.onclick = function() {
+                var sel = document.getElementById('subjectSelect');
+                var subj = (sel && sel.value) ? sel.value : null;
+                applyFilter(currentFilterType, subj, page + 1, per_page);
+            };
+            container.appendChild(next);
         }
         
         function displayStatisticsResults(stats) {
@@ -691,15 +759,17 @@
             document.getElementById('tableContainer').style.display = 'none';
         }
         
-        function downloadResults() {
-            window.location.href = '/download';
+        function downloadResults(format) {
+            // format: 'csv' or 'pdf'
+            window.location.href = `/download?format=${format}`;
         }
         
         function clearSession() {
             showLoading(true);
             
             fetch('/clear-session', {
-                method: 'POST'
+                method: 'POST',
+                credentials: 'same-origin'
             })
             .then(response => response.json())
             .then(data => {

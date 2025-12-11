@@ -17,6 +17,29 @@ from config import UPLOAD_FOLDER, DOWNLOAD_FOLDER, ALLOWED_EXTENSIONS, MAX_FILE_
 from utils.file_reader import read_student_marks, validate_marks_data
 from utils.data_processor import StudentMarksProcessor
 import io
+from math import ceil
+from io import BytesIO
+
+# PDF generation
+try:
+    from reportlab.lib.pagesizes import letter, landscape
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+    from reportlab.lib import colors
+    PDF_AVAILABLE = True
+except Exception:
+    PDF_AVAILABLE = False
+    logger.warning('reportlab not available; PDF export disabled')
+import logging
+from logging.handlers import RotatingFileHandler
+
+# Setup logging
+os.makedirs('logs', exist_ok=True)
+logger = logging.getLogger('student_marks_system')
+logger.setLevel(logging.INFO)
+handler = RotatingFileHandler('logs/error.log', maxBytes=1024*1024, backupCount=3)
+formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
 
 # Initialize Flask application
@@ -24,6 +47,7 @@ app = Flask(__name__)
 app.secret_key = SECRET_KEY
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
+app.config['DOWNLOAD_FOLDER'] = DOWNLOAD_FOLDER
 
 
 def allowed_file(filename: str) -> bool:
@@ -103,8 +127,8 @@ def upload_file():
         if not is_valid:
             return jsonify({'success': False, 'message': validation_msg}), 400
         
-        # Store dataframe in session
-        session['student_data'] = df.to_json()
+        # Store uploaded file path in session (avoid storing large data in session cookie)
+        session['uploaded_file'] = filename
         session['filename'] = file.filename
         
         # Get basic statistics
@@ -123,6 +147,7 @@ def upload_file():
         }), 200
         
     except Exception as e:
+        logger.exception('Exception in upload_file')
         return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
 
 
@@ -135,16 +160,29 @@ def filter_data():
         JSON response with filtered data
     """
     try:
-        # Check if data exists in session
-        if 'student_data' not in session:
+        # Check if uploaded file path exists in session
+        if 'uploaded_file' not in session:
             return jsonify({'success': False, 'message': 'No data loaded. Please upload a file first.'}), 400
         
-        # Reconstruct dataframe from session
-        df = pd.read_json(session['student_data'])
+        # Reconstruct dataframe from uploaded file (stored on server)
+        uploaded_file = session.get('uploaded_file')
+        if not uploaded_file or not os.path.exists(uploaded_file):
+            return jsonify({'success': False, 'message': 'Uploaded file not found on server. Please re-upload.'}), 400
+
+        success, df, msg = read_student_marks(uploaded_file)
+        if not success:
+            return jsonify({'success': False, 'message': f'Error reading uploaded file: {msg}'}), 500
+
         processor = StudentMarksProcessor(df)
         
+        # Parse JSON body safely (avoid exceptions on invalid JSON)
+        req_json = request.get_json(silent=True)
+        if not req_json:
+            logger.warning('Empty or invalid JSON received for /filter from %s', request.remote_addr)
+            return jsonify({'success': False, 'message': 'Invalid request payload. Expected JSON.'}), 400
+
         # Get filter type and apply appropriate filter
-        filter_type = request.json.get('filter_type')
+        filter_type = req_json.get('filter_type')
         filtered_df = None
         filter_description = ""
         
@@ -172,7 +210,12 @@ def filter_data():
             
         elif filter_type == 'summary':
             summary_df = processor.get_subject_wise_summary()
-            session['filtered_data'] = summary_df.to_json()
+            # save summary as CSV on server for download
+            os.makedirs(app.config['DOWNLOAD_FOLDER'], exist_ok=True)
+            summary_filename = generate_filename('summary', extension='csv')
+            summary_path = os.path.join(app.config['DOWNLOAD_FOLDER'], summary_filename)
+            summary_df.to_csv(summary_path, index=False)
+            session['filtered_file'] = summary_path
             session['filter_type'] = 'summary'
             return jsonify({
                 'success': True,
@@ -195,30 +238,68 @@ def filter_data():
             return jsonify({'success': False, 'message': 'Invalid filter type'}), 400
         
         if filtered_df is None or filtered_df.empty:
+            # Store empty filtered data as CSV on server for download consistency
+            os.makedirs(app.config['DOWNLOAD_FOLDER'], exist_ok=True)
+            # use columns from the uploaded dataframe (df is in scope above)
+            empty_df = pd.DataFrame(columns=list(df.columns) if 'df' in locals() else [])
+            empty_filename = generate_filename(filter_type, extension='csv')
+            empty_path = os.path.join(app.config['DOWNLOAD_FOLDER'], empty_filename)
+            empty_df.to_csv(empty_path, index=False)
+            session['filtered_file'] = empty_path
+            session['filter_type'] = filter_type
+            session['filter_description'] = filter_description
             return jsonify({
                 'success': True,
                 'message': 'No records found matching the filter criteria',
                 'data': [],
                 'rows': 0,
-                'filter_description': filter_description
+                'filter_description': filter_description,
+                'page': 1,
+                'per_page': 10,
+                'total_pages': 0,
+                'total_rows': 0
             }), 200
-        
-        # Store filtered data in session for download
-        session['filtered_data'] = filtered_df.to_json()
+
+        # Pagination support
+        page = int(req_json.get('page', 1) or 1)
+        per_page = int(req_json.get('per_page', 10) or 10)
+        total_rows = len(filtered_df)
+        total_pages = ceil(total_rows / per_page) if total_rows > 0 else 0
+        if page < 1:
+            page = 1
+        if per_page < 1:
+            per_page = 10
+
+        start = (page - 1) * per_page
+        end = start + per_page
+        page_df = filtered_df.iloc[start:end]
+
+        # Store full filtered data as CSV on server for downloads (avoid large session cookies)
+        os.makedirs(app.config['DOWNLOAD_FOLDER'], exist_ok=True)
+        filtered_filename = generate_filename(filter_type, extension='csv')
+        filtered_path = os.path.join(app.config['DOWNLOAD_FOLDER'], filtered_filename)
+        filtered_df.to_csv(filtered_path, index=False)
+        session['filtered_file'] = filtered_path
         session['filter_type'] = filter_type
         session['filter_description'] = filter_description
-        
+
         return jsonify({
             'success': True,
             'message': f'Filter applied successfully',
             'filter_description': filter_description,
-            'data': filtered_df.to_dict('records'),
-            'rows': len(filtered_df)
+            'data': page_df.to_dict('records'),
+            'rows': len(page_df),
+            'page': page,
+            'per_page': per_page,
+            'total_pages': total_pages,
+            'total_rows': total_rows
         }), 200
         
     except ValueError as e:
+        logger.exception('ValueError in filter_data')
         return jsonify({'success': False, 'message': str(e)}), 400
     except Exception as e:
+        logger.exception('Exception in filter_data')
         return jsonify({'success': False, 'message': f'Error applying filter: {str(e)}'}), 500
 
 
@@ -231,33 +312,45 @@ def download_filtered_data():
         CSV file download response
     """
     try:
-        # Check if filtered data exists in session
-        if 'filtered_data' not in session:
+        # Check if filtered file path exists in session
+        if 'filtered_file' not in session:
             return jsonify({'success': False, 'message': 'No filtered data to download'}), 400
         
-        # Reconstruct dataframe from session
-        df = pd.read_json(session['filtered_data'])
-        
-        # Generate filename based on filter type
-        filter_type = session.get('filter_type', 'results')
-        filename = generate_filename(filter_type)
-        filepath = os.path.join(app.config['DOWNLOAD_FOLDER'], filename)
-        
-        # Create downloads folder if it doesn't exist
-        os.makedirs(app.config['DOWNLOAD_FOLDER'], exist_ok=True)
-        
-        # Save filtered data to CSV
-        df.to_csv(filepath, index=False)
-        
-        # Send file for download
-        return send_file(
-            filepath,
-            mimetype='text/csv',
-            as_attachment=True,
-            download_name=filename
-        )
+        # Read filtered file path from session
+        filtered_path = session.get('filtered_file')
+        if not filtered_path or not os.path.exists(filtered_path):
+            return jsonify({'success': False, 'message': 'No filtered file available for download. Apply a filter first.'}), 400
+
+        fmt = request.args.get('format', 'csv').lower()
+
+        if fmt == 'pdf':
+            if not PDF_AVAILABLE:
+                return jsonify({'success': False, 'message': 'PDF export is not available (reportlab not installed).'}), 400
+            # Read CSV and generate PDF in-memory
+            df = pd.read_csv(filtered_path)
+            buffer = BytesIO()
+            doc = SimpleDocTemplate(buffer, pagesize=landscape(letter))
+            data = [list(df.columns)] + df.fillna('').astype(str).values.tolist()
+            table = Table(data)
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#667eea')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('FONTSIZE', (0, 0), (-1, -1), 8),
+            ]))
+            elems = [table]
+            doc.build(elems)
+            buffer.seek(0)
+
+            download_name = generate_filename(session.get('filter_type', 'results'), extension='pdf')
+            return send_file(buffer, mimetype='application/pdf', as_attachment=True, download_name=download_name)
+        else:
+            # Serve existing CSV filtered file
+            return send_file(filtered_path, mimetype='text/csv', as_attachment=True, download_name=os.path.basename(filtered_path))
         
     except Exception as e:
+        logger.exception('Exception in download_filtered_data')
         return jsonify({'success': False, 'message': f'Error downloading file: {str(e)}'}), 500
 
 
@@ -273,6 +366,7 @@ def clear_session():
         session.clear()
         return jsonify({'success': True, 'message': 'Session cleared. Ready for new upload.'}), 200
     except Exception as e:
+        logger.exception('Exception in clear_session')
         return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
 
 
