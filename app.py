@@ -142,6 +142,7 @@ def upload_file():
             'data': {
                 'rows': len(df),
                 'subjects': subjects,
+                'float_columns': processor.get_float_columns(),  # Available semester columns
                 'statistics': stats
             }
         }), 200
@@ -233,6 +234,24 @@ def filter_data():
                 'filter_description': 'Overall Class Statistics',
                 'statistics': stats
             }), 200
+        
+        elif filter_type == 'float_pass':
+            float_column = request.json.get('float_column')
+            if not float_column:
+                return jsonify({'success': False, 'message': 'Float column not specified'}), 400
+            filtered_df = processor.filter_float_pass(float_column)
+            # Extract semester number from Float_X
+            sem_num = float_column.replace('Float_', 'Sem ')
+            filter_description = f"Students who passed {sem_num}"
+            
+        elif filter_type == 'float_fail':
+            float_column = request.json.get('float_column')
+            if not float_column:
+                return jsonify({'success': False, 'message': 'Float column not specified'}), 400
+            filtered_df = processor.filter_float_fail(float_column)
+            # Extract semester number from Float_X
+            sem_num = float_column.replace('Float_', 'Sem ')
+            filter_description = f"Students who failed {sem_num}"
         
         else:
             return jsonify({'success': False, 'message': 'Invalid filter type'}), 400

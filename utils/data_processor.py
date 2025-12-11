@@ -35,6 +35,10 @@ class StudentMarksProcessor:
         """
         Get list of subject columns (excludes student metadata columns).
         
+        For new CSV format (BBA_SEM5_OCT25.csv):
+        - Excludes Int1-6 (internal marks) and Ext1-6 (external marks)
+        - Only includes Total1-6 (final subject marks) for pass/fail evaluation
+        
         Returns:
             List[str]: List of subject column names
         """
@@ -42,15 +46,54 @@ class StudentMarksProcessor:
         metadata_columns = [
             'Student Name', 'Seat No.', 'Enrollment No.', 'SP ID', 
             'College Name', 'Exam Name', 'Student ID', 'Roll No.',
-            'Overall Status', 'Passed Subjects', 'Failed Subjects'
+            'Overall Status', 'Passed Subjects', 'Failed Subjects',
+            # New format columns
+            'SeatNo', 'SPID', 'Gender', 'Name',
+            # Summary columns
+            'Total_INT', 'Total_EXT', 'Combined_Total', 'Pass_Fail'
         ]
-        return [col for col in self.df.columns if col not in metadata_columns]
+        
+        # Exclude patterns: Grade columns, Float columns, Int columns, Ext columns
+        exclude_patterns = ['Grade', 'Int', 'Ext']
+        
+        # Add Float columns (Float_1 through Float_19)  
+        for i in range(1, 20):
+            metadata_columns.append(f'Float_{i}')
+        
+        # Filter out metadata columns and columns matching exclude patterns
+        subject_cols = []
+        for col in self.df.columns:
+            # Skip if in metadata
+            if col in metadata_columns:
+                continue
+            
+            # Skip if matches any exclude pattern
+            # But be careful: "Int" and "Ext" should exclude Int1, Ext1, etc.
+            # but NOT exclude words like "Interest" or "External Affairs"
+            skip = False
+            for pattern in exclude_patterns:
+                if pattern == 'Grade':
+                    if pattern in col:
+                        skip = True
+                        break
+                elif pattern == 'Int' or pattern == 'Ext':
+                    # Only exclude if it's Int1, Int2, etc. or Ext1, Ext2, etc.
+                    # Pattern: starts with Int or Ext followed by a digit
+                    if col.startswith(pattern) and len(col) > len(pattern) and col[len(pattern)].isdigit():
+                        skip = True
+                        break
+            
+            if not skip:
+                subject_cols.append(col)
+        
+        return subject_cols
     
     def calculate_overall_status(self) -> pd.DataFrame:
         """
         Calculate overall pass/fail status for each student.
         
-        A student passes if they pass in all subjects, otherwise they fail.
+        If CSV has 'Pass_Fail' column, use it (official university result).
+        Otherwise, calculate based on subject marks.
         
         Returns:
             pd.DataFrame: Original dataframe with additional columns:
@@ -64,9 +107,14 @@ class StudentMarksProcessor:
         passed_count = (result_df[self.subject_columns] >= self.pass_threshold).sum(axis=1)
         failed_count = (result_df[self.subject_columns] < self.pass_threshold).sum(axis=1)
         
-        # Determine overall status (pass only if all subjects passed)
-        overall_status = ['Pass' if failed_count[i] == 0 else 'Fail' 
-                         for i in range(len(result_df))]
+        # Use Pass_Fail column from CSV if available (official result)
+        if 'Pass_Fail' in result_df.columns:
+            # Use the official Pass_Fail status from CSV
+            overall_status = result_df['Pass_Fail'].fillna('Fail').tolist()
+        else:
+            # Calculate: pass only if all subjects passed
+            overall_status = ['Pass' if failed_count[i] == 0 else 'Fail' 
+                             for i in range(len(result_df))]
         
         result_df['Passed Subjects'] = passed_count
         result_df['Failed Subjects'] = failed_count
@@ -90,10 +138,18 @@ class StudentMarksProcessor:
         Filter and return only students with their overall pass/fail status.
         
         Returns:
-            pd.DataFrame: Dataframe with Student Name, subjects, and overall status
+            pd.DataFrame: Dataframe with Student Name/Name, subjects, and overall status
         """
         df_with_status = self.calculate_overall_status()
-        return df_with_status[['Student Name', 'Overall Status', 'Passed Subjects', 'Failed Subjects']]
+        
+        # Determine which name column exists
+        name_col = 'Student Name' if 'Student Name' in df_with_status.columns else 'Name'
+        
+        result_cols = [name_col, 'Overall Status', 'Passed Subjects', 'Failed Subjects']
+        # Only include columns that exist
+        result_cols = [col for col in result_cols if col in df_with_status.columns]
+        
+        return df_with_status[result_cols]
     
     def filter_passed_students(self) -> pd.DataFrame:
         """
@@ -108,8 +164,14 @@ class StudentMarksProcessor:
         # Filter only passed students
         passed_df = df_with_status[df_with_status['Overall Status'] == 'Pass'].copy()
         
-        # Define desired column order: Student Name, Seat No., Enrollment No., SP ID, Exam Name, Passed Subjects, Overall Status
-        desired_order = ['Student Name', 'Seat No.', 'Enrollment No.', 'SP ID', 'Exam Name', 'Passed Subjects', 'Overall Status']
+        # Define desired column order: support both old and new format
+        desired_order = [
+            'Student Name', 'Name', 'Gender', 
+            'Seat No.', 'SeatNo', 'Enrollment No.', 'SP ID', 'SPID', 
+            'Exam Name', 
+            'Float_1', 'Float_2', 'Float_3', 'Float_4', 'Float_5',  # CGPA and failure tracking
+            'Passed Subjects', 'Overall Status'
+        ]
         
         # Select only columns that exist in the dataframe, in the desired order
         result_cols = [col for col in desired_order if col in passed_df.columns]
@@ -129,8 +191,14 @@ class StudentMarksProcessor:
         # Filter only failed students
         failed_df = df_with_status[df_with_status['Overall Status'] == 'Fail'].copy()
         
-        # Define desired column order: Student Name, Seat No., Enrollment No., SP ID, Exam Name, Failed Subjects, Overall Status
-        desired_order = ['Student Name', 'Seat No.', 'Enrollment No.', 'SP ID', 'Exam Name', 'Failed Subjects', 'Overall Status']
+        # Define desired column order: support both old and new format
+        desired_order = [
+            'Student Name', 'Name', 'Gender',
+            'Seat No.', 'SeatNo', 'Enrollment No.', 'SP ID', 'SPID',
+            'Exam Name', 
+            'Float_1', 'Float_2', 'Float_3', 'Float_4', 'Float_5',  # CGPA and failure tracking
+            'Failed Subjects', 'Overall Status'
+        ]
         
         # Select only columns that exist in the dataframe, in the desired order
         result_cols = [col for col in desired_order if col in failed_df.columns]
@@ -236,3 +304,108 @@ class StudentMarksProcessor:
             'Highest Marks': f"{highest_marks:.0f}",
             'Lowest Marks': f"{lowest_marks:.0f}"
         }
+    
+    def filter_float_pass(self, float_column: str) -> pd.DataFrame:
+        """
+        Filter students who passed a specific semester (Float column has numeric value).
+        
+        Args:
+            float_column (str): Float column name (e.g., 'Float_1', 'Float_2')
+            
+        Returns:
+            pd.DataFrame: Dataframe containing students who passed that semester
+        """
+        if float_column not in self.df.columns:
+            raise ValueError(f"Column '{float_column}' not found in data")
+        
+        df_with_status = self.calculate_overall_status()
+        
+        # Check if value is numeric (pass) or starts with 'F-' (fail)
+        def is_passed(value):
+            if pd.isna(value):
+                return False
+            value_str = str(value).strip()
+            # If it starts with 'F-' or 'F' followed by hyphen, it's a fail
+            if value_str.startswith('F-') or value_str.startswith('F'):
+                return False
+            # Try to convert to float - if successful, it's a numeric pass value
+            try:
+                float(value_str)
+                return True
+            except:
+                return False
+        
+        df_with_status[f'Status in {float_column}'] = df_with_status[float_column].apply(
+            lambda x: 'Pass' if is_passed(x) else 'Fail'
+        )
+        
+        # Define desired column order
+        desired_order = [
+            'Student Name', 'Name', 'Gender',
+            'Seat No.', 'SeatNo', 'Enrollment No.', 'SP ID', 'SPID',
+            'Exam Name', 
+            float_column, f'Status in {float_column}',
+            'Float_1', 'Float_2', 'Float_3', 'Float_4', 'Float_5'
+        ]
+        
+        # Select only columns that exist
+        result_cols = [col for col in desired_order if col in df_with_status.columns]
+        
+        return df_with_status[df_with_status[f'Status in {float_column}'] == 'Pass'][result_cols].copy()
+    
+    def filter_float_fail(self, float_column: str) -> pd.DataFrame:
+        """
+        Filter students who failed a specific semester (Float column has F-n value).
+        
+        Args:
+            float_column (str): Float column name (e.g., 'Float_1', 'Float_2')
+            
+        Returns:
+            pd.DataFrame: Dataframe containing students who failed that semester
+        """
+        if float_column not in self.df.columns:
+            raise ValueError(f"Column '{float_column}' not found in data")
+        
+        df_with_status = self.calculate_overall_status()
+        
+        # Check if value is numeric (pass) or starts with 'F-' (fail)
+        def is_passed(value):
+            if pd.isna(value):
+                return False
+            value_str = str(value).strip()
+            # If it starts with 'F-' or 'F' followed by hyphen, it's a fail
+            if value_str.startswith('F-') or value_str.startswith('F'):
+                return False
+            # Try to convert to float - if successful, it's a numeric pass value
+            try:
+                float(value_str)
+                return True
+            except:
+                return False
+        
+        df_with_status[f'Status in {float_column}'] = df_with_status[float_column].apply(
+            lambda x: 'Pass' if is_passed(x) else 'Fail'
+        )
+        
+        # Define desired column order
+        desired_order = [
+            'Student Name', 'Name', 'Gender',
+            'Seat No.', 'SeatNo', 'Enrollment No.', 'SP ID', 'SPID',
+            'Exam Name',
+            float_column, f'Status in {float_column}',
+            'Float_1', 'Float_2', 'Float_3', 'Float_4', 'Float_5'
+        ]
+        
+        # Select only columns that exist
+        result_cols = [col for col in desired_order if col in df_with_status.columns]
+        
+        return df_with_status[df_with_status[f'Status in {float_column}'] == 'Fail'][result_cols].copy()
+    
+    def get_float_columns(self) -> List[str]:
+        """
+        Get list of Float columns available in the dataframe.
+        
+        Returns:
+            List[str]: List of Float column names (e.g., ['Float_1', 'Float_2', ...])
+        """
+        return [col for col in self.df.columns if col.startswith('Float_')]

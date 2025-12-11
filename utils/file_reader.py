@@ -58,8 +58,20 @@ def read_csv_file(file_path: str) -> Tuple[bool, pd.DataFrame, str]:
         
         # Convert all numeric columns to float, handle errors
         # Skip metadata columns that should not be converted
-        metadata_columns = ['Student Name', 'Seat No.', 'Enrollment No.', 'SP ID', 'College Name']
-        numeric_cols = [col for col in df.columns if col not in metadata_columns]
+        metadata_columns = [
+            'Student Name', 'Seat No.', 'Enrollment No.', 'SP ID', 'College Name',
+            'SeatNo', 'SPID', 'Gender', 'Name'  # New format columns
+        ]
+        # Also skip summary and grade columns
+        exclude_patterns = ['Grade', 'Total_INT', 'Total_EXT', 'Combined_Total', 'Pass_Fail']
+        # Exclude Float columns (Float_1, Float_2, Float_3, etc.)
+        exclude_patterns.extend([f'Float_{i}' for i in range(1, 20)])  # Support up to Float_19
+        
+        numeric_cols = [
+            col for col in df.columns 
+            if col not in metadata_columns 
+            and not any(pattern in col for pattern in exclude_patterns)
+        ]
         for col in numeric_cols:
             try:
                 df[col] = pd.to_numeric(df[col], errors='coerce')
@@ -70,8 +82,8 @@ def read_csv_file(file_path: str) -> Tuple[bool, pd.DataFrame, str]:
         if df.empty:
             return False, pd.DataFrame(), "CSV file is empty or invalid"
         
-        # Rename the first column to 'Student Name' for consistency (only if not transformed)
-        if not was_transformed and 'Student Name' not in df.columns:
+        # Rename the first column to 'Student Name' for consistency (only if not transformed and no name column exists)
+        if not was_transformed and 'Student Name' not in df.columns and 'Name' not in df.columns:
             df.rename(columns={df.columns[0]: 'Student Name'}, inplace=True)
         
         return True, df, "CSV file loaded successfully"
@@ -253,9 +265,9 @@ def validate_marks_data(df: pd.DataFrame) -> Tuple[bool, str]:
     if df.empty:
         return False, "DataFrame is empty"
     
-    # Check if Student Name column exists
-    if 'Student Name' not in df.columns:
-        return False, "Missing 'Student Name' column"
+    # Check if Student Name or Name column exists (support both old and new format)
+    if 'Student Name' not in df.columns and 'Name' not in df.columns:
+        return False, "Missing 'Student Name' or 'Name' column"
     
     # Check if there are subject columns
     if df.shape[1] < 2:
@@ -265,20 +277,34 @@ def validate_marks_data(df: pd.DataFrame) -> Tuple[bool, str]:
     metadata_columns = [
         'Student Name', 'Seat No.', 'Enrollment No.', 'SP ID', 
         'College Name', 'Exam Name', 'Student ID', 'Roll No.',
-        'Overall Status', 'Passed Subjects', 'Failed Subjects'
+        'Overall Status', 'Passed Subjects', 'Failed Subjects',
+        # New format columns
+        'SeatNo', 'SPID', 'Gender', 'Name',
+        # Summary columns
+        'Total_INT', 'Total_EXT', 'Combined_Total', 'Pass_Fail'
     ]
+    
+    # Also exclude Grade and Float columns using patterns
+    exclude_patterns = ['Grade']
+    # Add Float columns (Float_1 through Float_19)
+    for i in range(1, 20):
+        metadata_columns.append(f'Float_{i}')
     
     # Get subject columns (exclude metadata)
     subject_cols = [col for col in df.columns if col not in metadata_columns]
     
     if not subject_cols:
         # If no subject columns found, it might be okay if we have metadata
-        if any(col in df.columns for col in ['Enrollment No.', 'Seat No.', 'SP ID']):
+        if any(col in df.columns for col in ['Enrollment No.', 'Seat No.', 'SP ID', 'SeatNo', 'SPID']):
             return True, "Data validation successful (metadata only)"
         return False, "No subject columns found"
     
     # Validate marks are in range 0-100 for subject columns only
     for col in subject_cols:
+        # Skip columns with Grade in the name
+        if any(pattern in col for pattern in exclude_patterns):
+            continue
+            
         # Skip non-numeric columns
         numeric_data = pd.to_numeric(df[col], errors='coerce')
         if numeric_data.notna().any():  # If there's any numeric data
