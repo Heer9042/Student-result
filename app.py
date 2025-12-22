@@ -189,11 +189,11 @@ def filter_data():
         
         if filter_type == 'overall_pass':
             filtered_df = processor.filter_passed_students()
-            filter_description = "Students who passed all subjects"
+            filter_description = "Students who passed all semesters"
             
         elif filter_type == 'overall_fail':
             filtered_df = processor.filter_failed_students()
-            filter_description = "Students who failed at least one subject"
+            filter_description = "Students who failed at least one semester"
             
         elif filter_type == 'subject_pass':
             subject = request.json.get('subject')

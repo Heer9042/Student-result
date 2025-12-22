@@ -157,18 +157,41 @@ class StudentMarksProcessor:
         
         return df_with_status[result_cols]
     
+    def is_passed_all_semesters(self, row):
+        """
+        Check if a student passed all semesters (all Float columns are numeric/pass values).
+        
+        Args:
+            row: DataFrame row
+            
+        Returns:
+            bool: True if passed all semesters, False otherwise
+        """
+        float_cols = self.get_float_columns()
+        for col in float_cols:
+            value = str(row[col]).strip()
+            # If starts with 'F-' or 'F' followed by digit (like F-1), it's fail
+            if value.startswith('F-') or (value.startswith('F') and len(value) > 1 and value[1].isdigit()):
+                return False
+            # Try to convert to float - if fails, consider as fail
+            try:
+                float(value)
+            except ValueError:
+                return False
+        return True
+    
     def filter_passed_students(self) -> pd.DataFrame:
         """
-        Filter students who passed overall (passed in all subjects).
+        Filter students who passed overall (passed in all semesters).
         Returns only student identity columns in specified order.
         
         Returns:
-            pd.DataFrame: Dataframe with student info for those who passed all subjects
+            pd.DataFrame: Dataframe with student info for those who passed all semesters
         """
         df_with_status = self.calculate_overall_status()
         
-        # Filter only passed students
-        passed_df = df_with_status[df_with_status['Overall Status'] == 'Pass'].copy()
+        # Filter only passed students (now based on semesters)
+        passed_df = df_with_status[df_with_status.apply(lambda row: self.is_passed_all_semesters(row), axis=1)].copy()
         
         # Define desired column order: support both old and new format
         desired_order = [
@@ -185,16 +208,16 @@ class StudentMarksProcessor:
     
     def filter_failed_students(self) -> pd.DataFrame:
         """
-        Filter students who failed overall (failed in at least one subject).
+        Filter students who failed overall (failed in at least one semester).
         Returns only student identity columns in specified order.
         
         Returns:
-            pd.DataFrame: Dataframe with student info for those who failed at least one subject
+            pd.DataFrame: Dataframe with student info for those who failed at least one semester
         """
         df_with_status = self.calculate_overall_status()
         
-        # Filter only failed students
-        failed_df = df_with_status[df_with_status['Overall Status'] == 'Fail'].copy()
+        # Filter only failed students (now based on semesters)
+        failed_df = df_with_status[~df_with_status.apply(lambda row: self.is_passed_all_semesters(row), axis=1)].copy()
         
         # Define desired column order: support both old and new format
         desired_order = [
