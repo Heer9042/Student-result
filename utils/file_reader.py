@@ -33,7 +33,8 @@ def read_csv_file(file_path: str) -> Tuple[bool, pd.DataFrame, str]:
     """
     try:
         # Read CSV file with student name as first column
-        df = pd.read_csv(file_path)
+        # keep_default_na=False prevents "ZR" from being treated as NaN
+        df = pd.read_csv(file_path, keep_default_na=False, na_values=[''])
         
         # Validate that the file has at least 2 columns (name + at least 1 subject)
         if df.shape[1] < 2:
@@ -74,7 +75,9 @@ def read_csv_file(file_path: str) -> Tuple[bool, pd.DataFrame, str]:
         ]
         for col in numeric_cols:
             try:
-                df[col] = pd.to_numeric(df[col], errors='coerce')
+                # Don't convert if column contains "ZR" (missing data marker)
+                if not df[col].astype(str).str.contains('ZR', na=False).any():
+                    df[col] = pd.to_numeric(df[col], errors='coerce')
             except Exception:
                 pass
         

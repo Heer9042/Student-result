@@ -1,0 +1,108 @@
+2025-12-22 14:27:31,233 ERROR: Exception in upload_file
+Traceback (most recent call last):
+  File "C:\Users\heerp\OneDrive\Desktop\collage projects\amit sir\Student-result\app.py", line 136, in upload_file
+    stats = processor.get_overall_statistics()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\heerp\OneDrive\Desktop\collage projects\amit sir\Student-result\utils\data_processor.py", line 332, in get_overall_statistics
+    average_marks = np.nanmean(marks_data)
+                    ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\heerp\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\lib\_nanfunctions_impl.py", line 1046, in nanmean
+    tot = np.sum(arr, axis=axis, dtype=dtype, out=out, keepdims=keepdims,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\heerp\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\_core\fromnumeric.py", line 2466, in sum
+    return _wrapreduction(
+           ^^^^^^^^^^^^^^^
+  File "C:\Users\heerp\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\_core\fromnumeric.py", line 86, in _wrapreduction
+    return ufunc.reduce(obj, axis, dtype, out, **passkwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: can only concatenate str (not "int") to str
+2025-12-22 14:27:42,506 ERROR: Exception in upload_file
+Traceback (most recent call last):
+  File "C:\Users\heerp\OneDrive\Desktop\collage projects\amit sir\Student-result\app.py", line 136, in upload_file
+    stats = processor.get_overall_statistics()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\heerp\OneDrive\Desktop\collage projects\amit sir\Student-result\utils\data_processor.py", line 332, in get_overall_statistics
+    average_marks = np.nanmean(marks_data)
+                    ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\heerp\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\lib\_nanfunctions_impl.py", line 1046, in nanmean
+    tot = np.sum(arr, axis=axis, dtype=dtype, out=out, keepdims=keepdims,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\heerp\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\_core\fromnumeric.py", line 2466, in sum
+    return _wrapreduction(
+           ^^^^^^^^^^^^^^^
+  File "C:\Users\heerp\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\_core\fromnumeric.py", line 86, in _wrapreduction
+    return ufunc.reduce(obj, axis, dtype, out, **passkwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: can only concatenate str (not "int") to str
+2025-12-22 14:29:35,596 ERROR: Exception in upload_file
+Traceback (most recent call last):
+  File "C:\Users\heerp\OneDrive\Desktop\collage projects\amit sir\Student-result\app.py", line 136, in upload_file
+    stats = processor.get_overall_statistics()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\heerp\OneDrive\Desktop\collage projects\amit sir\Student-result\utils\data_processor.py", line 334, in get_overall_statistics
+    average_marks = np.nanmean(marks_data)
+                    ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\heerp\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\lib\_nanfunctions_impl.py", line 1046, in nanmean
+    tot = np.sum(arr, axis=axis, dtype=dtype, out=out, keepdims=keepdims,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\heerp\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\_core\fromnumeric.py", line 2466, in sum
+    return _wrapreduction(
+           ^^^^^^^^^^^^^^^
+  File "C:\Users\heerp\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\_core\fromnumeric.py", line 86, in _wrapreduction
+    return ufunc.reduce(obj, axis, dtype, out, **passkwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: can only concatenate str (not "int") to str
+2025-12-22 14:30:00,617 ERROR: Exception in upload_file
+Traceback (most recent call last):
+  File "C:\Users\heerp\OneDrive\Desktop\collage projects\amit sir\Student-result\app.py", line 136, in upload_file
+    stats = processor.get_overall_statistics()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\heerp\OneDrive\Desktop\collage projects\amit sir\Student-result\utils\data_processor.py", line 334, in get_overall_statistics
+    average_marks = np.nanmean(marks_data)
+                    ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\heerp\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\lib\_nanfunctions_impl.py", line 1046, in nanmean
+    tot = np.sum(arr, axis=axis, dtype=dtype, out=out, keepdims=keepdims,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\heerp\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\_core\fromnumeric.py", line 2466, in sum
+    return _wrapreduction(
+           ^^^^^^^^^^^^^^^
+  File "C:\Users\heerp\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\_core\fromnumeric.py", line 86, in _wrapreduction
+    return ufunc.reduce(obj, axis, dtype, out, **passkwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: can only concatenate str (not "int") to str
+2025-12-22 14:31:01,084 ERROR: Exception in upload_file
+Traceback (most recent call last):
+  File "C:\Users\heerp\OneDrive\Desktop\collage projects\amit sir\Student-result\app.py", line 136, in upload_file
+    stats = processor.get_overall_statistics()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\heerp\OneDrive\Desktop\collage projects\amit sir\Student-result\utils\data_processor.py", line 334, in get_overall_statistics
+    average_marks = np.nanmean(marks_data)
+                    ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\heerp\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\lib\_nanfunctions_impl.py", line 1046, in nanmean
+    tot = np.sum(arr, axis=axis, dtype=dtype, out=out, keepdims=keepdims,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\heerp\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\_core\fromnumeric.py", line 2466, in sum
+    return _wrapreduction(
+           ^^^^^^^^^^^^^^^
+  File "C:\Users\heerp\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\_core\fromnumeric.py", line 86, in _wrapreduction
+    return ufunc.reduce(obj, axis, dtype, out, **passkwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: can only concatenate str (not "int") to str
+2025-12-22 14:31:12,670 ERROR: Exception in upload_file
+Traceback (most recent call last):
+  File "C:\Users\heerp\OneDrive\Desktop\collage projects\amit sir\Student-result\app.py", line 136, in upload_file
+    stats = processor.get_overall_statistics()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\heerp\OneDrive\Desktop\collage projects\amit sir\Student-result\utils\data_processor.py", line 334, in get_overall_statistics
+    average_marks = np.nanmean(marks_data)
+                    ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\heerp\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\lib\_nanfunctions_impl.py", line 1046, in nanmean
+    tot = np.sum(arr, axis=axis, dtype=dtype, out=out, keepdims=keepdims,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\heerp\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\_core\fromnumeric.py", line 2466, in sum
+    return _wrapreduction(
+           ^^^^^^^^^^^^^^^
+  File "C:\Users\heerp\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\_core\fromnumeric.py", line 86, in _wrapreduction
+    return ufunc.reduce(obj, axis, dtype, out, **passkwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: can only concatenate str (not "int") to str

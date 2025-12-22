@@ -222,11 +222,17 @@
             font-weight: bold;
         }
         
+        #tableContainer {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin-bottom: 20px;
+        }
+        
         .results-table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 20px;
-            overflow-x: auto;
+            min-width: 600px;
         }
         
         .results-table thead {
@@ -340,6 +346,48 @@
             flex-wrap: wrap;
         }
         
+        .semester-filters-section {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05));
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+            border-left: 5px solid #667eea;
+        }
+        
+        .semester-filters-section h3 {
+            color: #333;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.1em;
+        }
+        
+        .semester-filters-section .filter-buttons {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        
+        .back-btn {
+            background: #ff9500;
+            color: white;
+            padding: 15px;
+            border: 2px solid #ff9500;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: all 0.3s;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        .back-btn:hover {
+            background: #e88000;
+            border-color: #e88000;
+        }
+        
         @media (max-width: 768px) {
             .content {
                 padding: 20px;
@@ -355,6 +403,10 @@
             
             .stats-grid {
                 grid-template-columns: 1fr;
+            }
+            
+            .semester-filters-section {
+                padding: 15px;
             }
         }
     </style>
@@ -411,6 +463,9 @@
                     <button type="button" class="filter-btn" onclick="applyFilter('statistics')">
                         🔢 Statistics
                     </button>
+                    <button type="button" class="filter-btn" id="semesterFilterBtn" onclick="toggleSemesterFilters()" style="display: none;">
+                        📅 Semester Filters (CGPA & F-n)
+                    </button>
                 </div>
                 
                 <!-- Subject Selector -->
@@ -422,8 +477,7 @@
                 </div>
                 
                 <!-- Float/Semester Filter Section -->
-                <div id="floatFilterContainer" style="display: none;">
-                    <h3 style="color: #333; margin: 20px 0 15px 0; padding-top: 20px; border-top: 2px solid #e0e0e0;">Semester Filters (CGPA & F-n)</h3>
+                <div id="floatFilterContainer" class="semester-filters-section" style="display: none;">
                     <div id="floatFilterButtons" class="filter-buttons"></div>
                 </div>
             </div>
@@ -596,6 +650,9 @@
             const selector = document.getElementById('subjectSelector');
             const select = document.getElementById('subjectSelect');
             
+            // Hide semester filters when switching to subject filter
+            document.getElementById('floatFilterContainer').style.display = 'none';
+            
             selector.style.display = 'block';
             select.innerHTML = '<option value="">-- Choose Subject --</option>';
             
@@ -607,37 +664,101 @@
             });
         }
         
+        function toggleSemesterFilters() {
+            const floatContainer = document.getElementById('floatFilterContainer');
+            const resultsSection = document.getElementById('resultsSection');
+            const subjectSelector = document.getElementById('subjectSelector');
+            
+            if (floatContainer.style.display === 'none' || floatContainer.style.display === '') {
+                // Show semester filters and hide results
+                floatContainer.style.display = 'block';
+                resultsSection.style.display = 'none';
+                subjectSelector.style.display = 'none';
+                floatContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                // Hide semester filters
+                floatContainer.style.display = 'none';
+            }
+        }
+        
         function populateFloatFilters() {
             const container = document.getElementById('floatFilterButtons');
             const floatContainer = document.getElementById('floatFilterContainer');
+            const semesterBtn = document.getElementById('semesterFilterBtn');
             
             if (!float_columns || float_columns.length === 0) {
                 floatContainer.style.display = 'none';
+                semesterBtn.style.display = 'none';
                 return;
             }
             
-            floatContainer.style.display = 'block';
+            // Keep the container hidden by default - only show when button is clicked
+            floatContainer.style.display = 'none';
+            semesterBtn.style.display = 'block';
+            showPassFailOptions();
+        }
+        
+        function showPassFailOptions() {
+            const container = document.getElementById('floatFilterButtons');
             container.innerHTML = '';
             
+            // Create Pass button
+            const passBtn = document.createElement('button');
+            passBtn.type = 'button';
+            passBtn.className = 'filter-btn';
+            passBtn.textContent = '✅ Pass';
+            passBtn.onclick = () => showSemesterSelection('pass');
+            container.appendChild(passBtn);
+            
+            // Create Fail button
+            const failBtn = document.createElement('button');
+            failBtn.type = 'button';
+            failBtn.className = 'filter-btn';
+            failBtn.textContent = '❌ Fail';
+            failBtn.onclick = () => showSemesterSelection('fail');
+            container.appendChild(failBtn);
+        }
+        
+        function showSemesterSelection(passFailType) {
+            const container = document.getElementById('floatFilterButtons');
+            container.innerHTML = '';
+            
+            // Create a wrapper div for back button
+            const backWrapper = document.createElement('div');
+            backWrapper.style.marginBottom = '15px';
+            
+            // Create Back button
+            const backBtn = document.createElement('button');
+            backBtn.type = 'button';
+            backBtn.className = 'back-btn';
+            backBtn.textContent = '◀ Back to Pass/Fail';
+            backBtn.onclick = function(e) {
+                e.preventDefault();
+                showPassFailOptions();
+            };
+            backWrapper.appendChild(backBtn);
+            container.appendChild(backWrapper);
+            
+            // Create semester buttons
             float_columns.forEach(floatCol => {
-                // Extract semester number (Float_1 -> Sem 1)
-                const semNum = floatCol.replace('Float_', 'Sem ');
-                
-                // Create Pass button
-                const passBtn = document.createElement('button');
-                passBtn.type = 'button';
-                passBtn.className = 'filter-btn';
-                passBtn.textContent = `✅ ${semNum} Pass`;
-                passBtn.onclick = () => applyFloatFilter('float_pass', floatCol);
-                container.appendChild(passBtn);
-                
-                // Create Fail button
-                const failBtn = document.createElement('button');
-                failBtn.type = 'button';
-                failBtn.className = 'filter-btn';
-                failBtn.textContent = `❌ ${semNum} Fail`;
-                failBtn.onclick = () => applyFloatFilter('float_fail', floatCol);
-                container.appendChild(failBtn);
+                const semNum = floatCol.replace('Float_', '');
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'filter-btn';
+                if (passFailType === 'pass') {
+                    btn.textContent = `✅ Semester ${semNum} - Pass`;
+                    btn.onclick = function(e) {
+                        e.preventDefault();
+                        applyFloatFilter('float_pass', floatCol);
+                    };
+                } else {
+                    btn.textContent = `❌ Semester ${semNum} - Fail`;
+                    btn.onclick = function(e) {
+                        e.preventDefault();
+                        applyFloatFilter('float_fail', floatCol);
+                    };
+                }
+                container.appendChild(btn);
             });
         }
         
@@ -666,6 +787,8 @@
                 
                 if (data.success) {
                     displayResults(data.data, data.filter_description, data.page, data.per_page, data.total_pages, data.total_rows);
+                    // Hide semester filter section after applying filter
+                    document.getElementById('floatFilterContainer').style.display = 'none';
                     document.getElementById('subjectSelector').style.display = 'none';
                 } else {
                     showAlert(data.message, 'error');
@@ -696,6 +819,10 @@
             if (subject) {
                 payload.subject = subject;
             }
+            
+            // Hide semester filters when switching to other filters
+            document.getElementById('floatFilterContainer').style.display = 'none';
+            document.getElementById('subjectSelector').style.display = 'none';
             
             showLoading(true);
             

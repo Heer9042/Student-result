@@ -103,9 +103,15 @@ class StudentMarksProcessor:
         """
         result_df = self.df.copy()
         
+        # Convert subject columns to numeric, treating 'ZR' and non-numeric as NaN/failure
+        numeric_df = result_df[self.subject_columns].copy()
+        for col in numeric_df.columns:
+            numeric_df[col] = pd.to_numeric(numeric_df[col], errors='coerce')
+        
         # Count passed and failed subjects for each student
-        passed_count = (result_df[self.subject_columns] >= self.pass_threshold).sum(axis=1)
-        failed_count = (result_df[self.subject_columns] < self.pass_threshold).sum(axis=1)
+        # Treat NaN (from 'ZR' conversion) as below threshold
+        passed_count = (numeric_df >= self.pass_threshold).sum(axis=1)
+        failed_count = (numeric_df < self.pass_threshold).fillna(1).sum(axis=1)
         
         # Use Pass_Fail column from CSV if available (official result)
         if 'Pass_Fail' in result_df.columns:
@@ -169,7 +175,6 @@ class StudentMarksProcessor:
             'Student Name', 'Name', 'Gender', 
             'Seat No.', 'SeatNo', 'Enrollment No.', 'SP ID', 'SPID', 
             'Exam Name', 
-            'Float_1', 'Float_2', 'Float_3', 'Float_4', 'Float_5',  # CGPA and failure tracking
             'Passed Subjects', 'Overall Status'
         ]
         
@@ -196,7 +201,6 @@ class StudentMarksProcessor:
             'Student Name', 'Name', 'Gender',
             'Seat No.', 'SeatNo', 'Enrollment No.', 'SP ID', 'SPID',
             'Exam Name', 
-            'Float_1', 'Float_2', 'Float_3', 'Float_4', 'Float_5',  # CGPA and failure tracking
             'Failed Subjects', 'Overall Status'
         ]
         
@@ -215,19 +219,36 @@ class StudentMarksProcessor:
         Returns:
             pd.DataFrame: Dataframe containing students who passed the subject
         """
+        subject = str(subject)  # Ensure subject is a string
         if subject not in self.subject_columns:
             raise ValueError(f"Subject '{subject}' not found in data")
 
         # Use dataframe with overall status to include pass/fail counts
         df_with_status = self.calculate_overall_status()
-        # Add subject-specific status
+        # Add subject-specific status - convert to numeric, treating 'ZR' as failure
         df_with_status['Status in ' + subject] = df_with_status[subject].apply(
-            lambda x: 'Pass' if pd.notna(x) and x >= self.pass_threshold else 'Fail'
+            lambda x: 'Pass' if (isinstance(x, (int, float)) or (isinstance(x, str) and x.replace('.', '').isdigit())) 
+                               and float(x) >= self.pass_threshold else 'Fail'
         )
 
-        # Return full details: original columns + subject status and overall columns
-        result_cols = list(self.df.columns) + ['Status in ' + subject, 'Overall Status', 'Passed Subjects', 'Failed Subjects']
-        return df_with_status[df_with_status['Status in ' + subject] == 'Pass'][result_cols].copy()
+        # Filter students who passed the subject
+        filtered_df = df_with_status[df_with_status['Status in ' + subject] == 'Pass'].copy()
+        
+        # Define desired column order: Name, SPID, SeatNo first, then subject and status, then rest
+        desired_order = [
+            'Name', 'Student Name',  # Student identifier
+            'SPID', 'SP ID',  # Student ID
+            'SeatNo', 'Seat No.',  # Seat number
+            'Gender',  # Gender
+            subject,  # The subject being filtered
+            'Status in ' + subject,  # Pass/Fail in subject
+            'Overall Status', 'Passed Subjects', 'Failed Subjects'  # Overall info
+        ]
+        
+        # Select only columns that exist in the dataframe, in the desired order
+        result_cols = [col for col in desired_order if col in filtered_df.columns]
+        
+        return filtered_df[result_cols].copy()
     
     def filter_subject_wise_fail(self, subject: str) -> pd.DataFrame:
         """
@@ -239,16 +260,35 @@ class StudentMarksProcessor:
         Returns:
             pd.DataFrame: Dataframe containing students who failed the subject
         """
+        subject = str(subject)  # Ensure subject is a string
         if subject not in self.subject_columns:
             raise ValueError(f"Subject '{subject}' not found in data")
 
         df_with_status = self.calculate_overall_status()
+        # Convert subject values to numeric, treating 'ZR' as failure
         df_with_status['Status in ' + subject] = df_with_status[subject].apply(
-            lambda x: 'Pass' if pd.notna(x) and x >= self.pass_threshold else 'Fail'
+            lambda x: 'Pass' if (isinstance(x, (int, float)) or (isinstance(x, str) and x.replace('.', '').isdigit())) 
+                               and float(x) >= self.pass_threshold else 'Fail'
         )
 
-        result_cols = list(self.df.columns) + ['Status in ' + subject, 'Overall Status', 'Passed Subjects', 'Failed Subjects']
-        return df_with_status[df_with_status['Status in ' + subject] == 'Fail'][result_cols].copy()
+        # Filter students who failed the subject
+        filtered_df = df_with_status[df_with_status['Status in ' + subject] == 'Fail'].copy()
+        
+        # Define desired column order: Name, SPID, SeatNo first, then subject and status, then rest
+        desired_order = [
+            'Name', 'Student Name',  # Student identifier
+            'SPID', 'SP ID',  # Student ID
+            'SeatNo', 'Seat No.',  # Seat number
+            'Gender',  # Gender
+            subject,  # The subject being filtered
+            'Status in ' + subject,  # Pass/Fail in subject
+            'Overall Status', 'Passed Subjects', 'Failed Subjects'  # Overall info
+        ]
+        
+        # Select only columns that exist in the dataframe, in the desired order
+        result_cols = [col for col in desired_order if col in filtered_df.columns]
+        
+        return filtered_df[result_cols].copy()
     
     def get_subject_wise_summary(self) -> pd.DataFrame:
         """
@@ -290,7 +330,11 @@ class StudentMarksProcessor:
         pass_percentage = (passed_students / total_students * 100) if total_students > 0 else 0
         
         # Calculate statistics using nanmean, nanmax, nanmin to handle NaN values
-        marks_data = self.df[self.subject_columns].values
+        # Convert to numeric first, treating 'ZR' as NaN
+        marks_data = self.df[self.subject_columns].copy()
+        for col in marks_data.columns:
+            marks_data[col] = pd.to_numeric(marks_data[col], errors='coerce')
+        marks_data = marks_data.values
         average_marks = np.nanmean(marks_data)
         highest_marks = np.nanmax(marks_data)
         lowest_marks = np.nanmin(marks_data)
@@ -315,6 +359,7 @@ class StudentMarksProcessor:
         Returns:
             pd.DataFrame: Dataframe containing students who passed that semester
         """
+        float_column = str(float_column)  # Ensure float_column is a string
         if float_column not in self.df.columns:
             raise ValueError(f"Column '{float_column}' not found in data")
         
@@ -344,8 +389,7 @@ class StudentMarksProcessor:
             'Student Name', 'Name', 'Gender',
             'Seat No.', 'SeatNo', 'Enrollment No.', 'SP ID', 'SPID',
             'Exam Name', 
-            float_column, f'Status in {float_column}',
-            'Float_1', 'Float_2', 'Float_3', 'Float_4', 'Float_5'
+            float_column, f'Status in {float_column}'
         ]
         
         # Select only columns that exist
@@ -363,6 +407,7 @@ class StudentMarksProcessor:
         Returns:
             pd.DataFrame: Dataframe containing students who failed that semester
         """
+        float_column = str(float_column)  # Ensure float_column is a string
         if float_column not in self.df.columns:
             raise ValueError(f"Column '{float_column}' not found in data")
         
@@ -392,8 +437,7 @@ class StudentMarksProcessor:
             'Student Name', 'Name', 'Gender',
             'Seat No.', 'SeatNo', 'Enrollment No.', 'SP ID', 'SPID',
             'Exam Name',
-            float_column, f'Status in {float_column}',
-            'Float_1', 'Float_2', 'Float_3', 'Float_4', 'Float_5'
+            float_column, f'Status in {float_column}'
         ]
         
         # Select only columns that exist
