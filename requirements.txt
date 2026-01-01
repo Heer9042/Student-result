@@ -4,6 +4,3 @@ PyPDF2
 python-dotenv
 Werkzeug
 reportlab
-
-
-pip install Flask pandas PyPDF2 python-dotenv Werkzeug reportlab

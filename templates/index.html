@@ -48,6 +48,30 @@
             padding: 40px;
         }
         
+        #main-menu h2 {
+            font-size: 1.8em;
+            color: #333;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .menu-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 35px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin: 10px 15px;
+        }
+
+        .menu-btn:hover {
+            transform: scale(1.05);
+        }
+        
         .upload-section {
             margin-bottom: 40px;
         }
@@ -419,583 +443,1550 @@
         </header>
         
         <div class="content">
+            <!-- Main Menu -->
+            <div id="main-menu">
+                <h2>Choose an option</h2>
+                <button class="menu-btn" onclick="showSection('result-analysis-section')">Result Analysis</button>
+                <button class="menu-btn" onclick="showSection('data-conversion-section')">Convert Data</button>
+            </div>
+
             <!-- Alert Messages -->
             <div id="alertMessage" class="alert"></div>
             
-            <!-- Upload Section -->
-            <div class="upload-section">
-                <h2>Step 1: Upload File</h2>
-                <div class="upload-box" onclick="document.getElementById('fileInput').click()">
-                    <p>📁 Drag & drop your CSV or PDF file here</p>
-                    <p style="font-size: 0.9em; color: #999;">Or click to browse</p>
-                    <button type="button" class="upload-btn">Choose File</button>
-                    <input type="file" id="fileInput" accept=".csv,.pdf">
-                    <div id="fileName"></div>
-                </div>
-                
-                <!-- Statistics Section -->
-                <div id="statisticsSection" class="statistics-section">
-                    <h3>📈 Initial Statistics</h3>
-                    <div id="statisticsContainer" class="stats-grid"></div>
-                </div>
-            </div>
+                        <!-- Result Analysis Section -->
             
-            <!-- Filter Section -->
-            <div id="filterSection" class="filter-section">
-                <h2>Step 2: Filter Data</h2>
-                
-                <div class="filter-buttons">
-                    <button type="button" class="filter-btn" onclick="applyFilter('overall_pass')">
-                        ✅ Passed in All Semesters
-                    </button>
-                    <button type="button" class="filter-btn" onclick="applyFilter('overall_fail')">
-                        ❌ Failed in At Least One Semester
-                    </button>
-                    <button type="button" class="filter-btn" onclick="showSubjectFilter('subject_pass')">
-                        📚 Pass in Subject
-                    </button>
-                    <button type="button" class="filter-btn" onclick="showSubjectFilter('subject_fail')">
-                        🚫 Fail in Subject
-                    </button>
-                    <button type="button" class="filter-btn" onclick="applyFilter('summary')">
-                        📊 Subject-wise Summary
-                    </button>
-                    <button type="button" class="filter-btn" onclick="applyFilter('statistics')">
-                        🔢 Statistics
-                    </button>
-                    <button type="button" class="filter-btn" id="semesterFilterBtn" onclick="toggleSemesterFilters()" style="display: none;">
-                        📅 Semester Filters (CGPA & F-n)
-                    </button>
-                </div>
-                
-                <!-- Subject Selector -->
-                <div id="subjectSelector" class="subject-selector" style="display: none;">
-                    <label for="subjectSelect">Select Subject:</label>
-                    <select id="subjectSelect" onchange="applySubjectFilter()">
-                        <option value="">-- Choose Subject --</option>
-                    </select>
-                </div>
-                
-                <!-- Float/Semester Filter Section -->
-                <div id="floatFilterContainer" class="semester-filters-section" style="display: none;">
-                    <div id="floatFilterButtons" class="filter-buttons"></div>
-                </div>
-            </div>
+                        <div id="result-analysis-section" style="display:none;">
             
-            <!-- Loading Indicator -->
-            <div id="loadingIndicator" class="loading">
-                <div class="spinner"></div>
-                <p>Processing...</p>
-            </div>
+                            <button class="back-btn" onclick="showSection('main-menu')">◀ Back to Main Menu</button>
             
-            <!-- Results Section -->
-            <div id="resultsSection" class="results-section">
-                <h2>Results</h2>
-                <div id="filterDescription" class="filter-description"></div>
-                
-                <div id="statisticsResults"></div>
-                
-                <div id="tableContainer">
-                    <table id="resultsTable" class="results-table">
-                        <thead></thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-                
-                <div id="noDataMessage" class="no-data" style="display: none;">
-                    No records found matching the filter criteria
-                </div>
-                
-                <div class="button-group">
-                    <div style="display:flex; gap:10px; align-items:center;">
-                        <button type="button" class="download-btn" onclick="downloadResults('csv')">
-                            ⬇️ Download CSV
-                        </button>
-                        <button type="button" class="download-btn" onclick="downloadResults('pdf')">
-                            📄 Download PDF
-                        </button>
-                    </div>
-                    <button type="button" class="clear-btn" onclick="clearSession()">
-                        🔄 Upload New File
-                    </button>
-                </div>
+                            <div class="upload-section" id="upload-section">
+            
+                                <h2>Step 1: Upload File</h2>
+            
+                                <div class="upload-box" onclick="document.getElementById('fileInput').click()">
+            
+                                    <p>📁 Drag & drop your CSV or PDF file here</p>
+            
+                                    <p style="font-size: 0.9em; color: #999;">Or click to browse</p>
+            
+                                    <button type="button" class="upload-btn">Choose File</button>
+            
+                                    <input type="file" id="fileInput" accept=".csv,.pdf">
+            
+                                    <div id="fileName"></div>
+            
+                                </div>
+            
+                            </div>
+            
+            
+            
+                            <!-- Subject Selection Section -->
+            
+                            <div id="subjectSelectionSection" style="display: none;">
+            
+                                <h2>Step 2: Select Subjects</h2>
+            
+                                <p>Select the subjects you want to include in the analysis.</p>
+            
+                                <div id="subjectCheckboxes" style="margin-bottom: 20px; max-height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 5px;">
+            
+                                    <!-- Checkboxes will be populated here -->
+            
+                                </div>
+            
+                                <button type="button" onclick="selectAllSubjects(true)">Select All</button>
+            
+                                <button type="button" onclick="selectAllSubjects(false)">Deselect All</button>
+            
+                                <button type="button" class="upload-btn" style="margin-top: 20px;" onclick="loadData()">Load Data</button>
+            
+                            </div>
+            
+                            
+            
+                            <!-- Statistics Section -->
+            
+                            <div id="statisticsSection" class="statistics-section">
+            
+                                <h3>📈 Initial Statistics</h3>
+            
+                                <div id="statisticsContainer" class="stats-grid"></div>
+            
+                            </div>
+            
+                            
+            
+                            <!-- Filter Section -->
+            
+                            <div id="filterSection" class="filter-section">
+            
+                                <h2>Step 3: Filter Data</h2>
+            
+                                
+            
+                                <div class="filter-buttons">
+            
+                                    <button type="button" class="filter-btn" onclick="applyFilter('overall_pass')">
+            
+                                        ✅ Passed in All Semesters
+            
+                                    </button>
+            
+                                    <button type="button" class="filter-btn" onclick="applyFilter('overall_fail')">
+            
+                                        ❌ Failed in At Least One Semester
+            
+                                    </button>
+            
+                                    <button type="button" class="filter-btn" onclick="showSubjectFilter('subject_pass')">
+            
+                                        📚 Pass in Subject
+            
+                                    </button>
+            
+                                    <button type="button" class="filter-btn" onclick="showSubjectFilter('subject_fail')">
+            
+                                        🚫 Fail in Subject
+            
+                                    </button>
+            
+                                    <button type="button" class="filter-btn" onclick="applyFilter('summary')">
+            
+                                        📊 Subject-wise Summary
+            
+                                    </button>
+            
+                                    <button type="button" class="filter-btn" onclick="applyFilter('statistics')">
+            
+                                        🔢 Statistics
+            
+                                    </button>
+            
+                                    <button type="button" class="filter-btn" id="semesterFilterBtn" onclick="toggleSemesterFilters()" style="display: none;">
+            
+                                        📅 Semester Filters (CGPA & F-n)
+            
+                                    </button>
+            
+                                </div>
+            
+                                
+            
+                                <!-- Subject Selector -->
+            
+                                <div id="subjectSelector" class="subject-selector" style="display: none;">
+            
+                                    <label for="subjectSelect">Select Subject:</label>
+            
+                                    <select id="subjectSelect" onchange="applySubjectFilter()">
+            
+                                        <option value="">-- Choose Subject --</option>
+            
+                                    </select>
+            
+                                </div>
+            
+                                
+            
+                                <!-- Semester Filter Section -->
+            
+                                <div id="semFilterContainer" class="semester-filters-section" style="display: none;">
+            
+                                    <div id="semFilterButtons" class="filter-buttons"></div>
+            
+                                </div>
+            
+                            </div>
+            
+                        </div>
+            
+            
+            
+                        <!-- Data Conversion Section -->
+            
+                        <div id="data-conversion-section" style="display:none;">
+            
+                            <button class="back-btn" onclick="showSection('main-menu')">◀ Back to Main Menu</button>
+            
+                            <h2>Convert PDF to CSV</h2>
+            
+                            <div class="upload-section">
+            
+                                <h3>Result PDF File</h3>
+            
+                                <div class="upload-box" onclick="document.getElementById('pdf-convert-input').click()">
+            
+                                    <p>📁 Upload the Result PDF</p>
+            
+                                    <button type="button" class="upload-btn">Choose PDF</button>
+            
+                                    <input type="file" id="pdf-convert-input" accept=".pdf">
+            
+                                    <div id="pdf-convert-fileName"></div>
+            
+                                </div>
+            
+                            </div>
+            
+                            <div class="upload-section">
+            
+                                <h3>Student Detail File (CSV or Excel)</h3>
+            
+                                <div class="upload-box" onclick="document.getElementById('student-detail-input').click()">
+            
+                                    <p>📁 Upload the Student Detail File</p>
+            
+                                    <button type="button" class="upload-btn">Choose File</button>
+            
+                                    <input type="file" id="student-detail-input" accept=".csv,.xlsx,.xls">
+            
+                                    <div id="student-detail-fileName"></div>
+            
+                                </div>
+            
+                            </div>
+            
+                                            <button class="upload-btn" onclick="convertData()">Convert and Download CSV</button>
+            
+                                            <p style="font-size: 0.9em; color: #999; margin-top: 10px;">You will be prompted to save the file after conversion.</p>
+            
+                                        </div>
+            
+                <script>
+            
+                    let currentSection = 'main-menu';
+            
+            
+            
+                    function showSection(sectionId) {
+            
+                        document.getElementById('main-menu').style.display = 'none';
+            
+                        document.getElementById('result-analysis-section').style.display = 'none';
+            
+                        document.getElementById('data-conversion-section').style.display = 'none';
+            
+                        document.getElementById(sectionId).style.display = 'block';
+            
+                        currentSection = sectionId;
+            
+                    }
+            
+            
+            
+                    document.getElementById('pdf-convert-input').addEventListener('change', function() {
+            
+                        const file = this.files[0];
+            
+                        if (file) {
+            
+                            document.getElementById('pdf-convert-fileName').textContent = `✓ Selected: ${file.name}`;
+            
+                        }
+            
+                    });
+            
+            
+            
+                    document.getElementById('student-detail-input').addEventListener('change', function() {
+            
+                        const file = this.files[0];
+            
+                        if (file) {
+            
+                            document.getElementById('student-detail-fileName').textContent = `✓ Selected: ${file.name}`;
+            
+                        }
+            
+                    });
+            
+            
+            
+                    function convertData() {
+            const pdfFile = document.getElementById('pdf-convert-input').files[0];
+            const detailFile = document.getElementById('student-detail-input').files[0];
 
-                <!-- Pagination controls -->
-                <div id="paginationControls" style="margin-top:15px; display:none; align-items:center; gap:10px;"></div>
-            </div>
-        </div>
-    </div>
-    
-    <script>
-        let subjects = [];
-        let float_columns = [];  
-        let currentFilterType = null;
-        
-        // Handle file input change
-        document.getElementById('fileInput').addEventListener('change', function() {
-            const file = this.files[0];
-            if (file) {
-                document.getElementById('fileName').textContent = `✓ Selected: ${file.name}`;
-                uploadFile(file);
+            if (!pdfFile || !detailFile) {
+                showAlert('Please select both PDF and Student Detail files.', 'error');
+                return;
             }
-        });
-        
-        // Handle drag and drop
-        const uploadBox = document.querySelector('.upload-box');
-        uploadBox.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadBox.style.borderColor = '#764ba2';
-            uploadBox.style.background = '#f0f2ff';
-        });
-        
-        uploadBox.addEventListener('dragleave', () => {
-            uploadBox.style.borderColor = '#667eea';
-            uploadBox.style.background = '#f8f9ff';
-        });
-        
-        uploadBox.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadBox.style.borderColor = '#667eea';
-            uploadBox.style.background = '#f8f9ff';
-            const file = e.dataTransfer.files[0];
-            if (file) {
-                document.getElementById('fileInput').files = e.dataTransfer.files;
-                document.getElementById('fileName').textContent = `✓ Selected: ${file.name}`;
-                uploadFile(file);
-            }
-        });
-        
-        function showAlert(message, type = 'info') {
-            const alert = document.getElementById('alertMessage');
-            alert.textContent = message;
-            alert.className = `alert ${type}`;
-            alert.style.display = 'block';
-            setTimeout(() => {
-                alert.style.display = 'none';
-            }, 5000);
-        }
-        
-        function uploadFile(file) {
+
             const formData = new FormData();
-            formData.append('file', file);
-            
+            formData.append('pdf_file', pdfFile);
+            formData.append('student_detail_file', detailFile);
+
             showLoading(true);
-            
-            fetch('/upload', {
+
+            fetch('/initiate-conversion', {
                 method: 'POST',
                 body: formData,
                 credentials: 'same-origin'
             })
-            .then(async response => {
-                showLoading(false);
-                // Try to parse JSON body if present
-                let payload = null;
-                try {
-                    payload = await response.json();
-                } catch (err) {
-                    // Non-JSON response
-                    const text = await response.text().catch(() => 'Unknown server response');
-                    showAlert(`Upload failed: ${response.status} ${response.statusText} - ${text}`, 'error');
-                    return;
-                }
-
-                if (!response.ok) {
-                    // Server returned error status with JSON message
-                    const msg = payload && payload.message ? payload.message : `Upload failed: ${response.status} ${response.statusText}`;
-                    showAlert(msg, 'error');
-                    return;
-                }
-
-                const data = payload;
-                if (data.success) {
-                    showAlert('File uploaded successfully! ✓', 'success');
-                    // Store subjects and float columns
-                    subjects = data.data.subjects;
-                    float_columns = data.data.float_columns || [];
-                    // Display statistics
-                    displayStatistics(data.data.statistics);
-                    // Populate float filter buttons
-                    populateFloatFilters();
-                    // Show filter section
-                    document.getElementById('filterSection').style.display = 'block';
-                    document.getElementById('statisticsSection').style.display = 'block';
-                } else {
-                    const msg = data && data.message ? data.message : 'Upload failed';
-                    showAlert(msg, 'error');
-                }
-            })
-            .catch(error => {
-                showLoading(false);
-                showAlert('Error uploading file: ' + (error.message || error), 'error');
-            });
-        }
-        
-        function displayStatistics(stats) {
-            const container = document.getElementById('statisticsContainer');
-            container.innerHTML = '';
-            
-            for (const [key, value] of Object.entries(stats)) {
-                const card = document.createElement('div');
-                card.className = 'stat-card';
-                card.innerHTML = `
-                    <div class="stat-label">${key}</div>
-                    <div class="stat-value">${value}</div>
-                `;
-                container.appendChild(card);
-            }
-        }
-        
-        function showSubjectFilter(filterType) {
-            currentFilterType = filterType;
-            const selector = document.getElementById('subjectSelector');
-            const select = document.getElementById('subjectSelect');
-            
-            // Hide semester filters when switching to subject filter
-            document.getElementById('floatFilterContainer').style.display = 'none';
-            
-            selector.style.display = 'block';
-            select.innerHTML = '<option value="">-- Choose Subject --</option>';
-            
-            subjects.forEach(subject => {
-                const option = document.createElement('option');
-                option.value = subject;
-                option.textContent = subject;
-                select.appendChild(option);
-            });
-        }
-        
-        function toggleSemesterFilters() {
-            const floatContainer = document.getElementById('floatFilterContainer');
-            const resultsSection = document.getElementById('resultsSection');
-            const subjectSelector = document.getElementById('subjectSelector');
-            
-            if (floatContainer.style.display === 'none' || floatContainer.style.display === '') {
-                // Show semester filters and hide results
-                floatContainer.style.display = 'block';
-                resultsSection.style.display = 'none';
-                subjectSelector.style.display = 'none';
-                floatContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            } else {
-                // Hide semester filters
-                floatContainer.style.display = 'none';
-            }
-        }
-        
-        function populateFloatFilters() {
-            const container = document.getElementById('floatFilterButtons');
-            const floatContainer = document.getElementById('floatFilterContainer');
-            const semesterBtn = document.getElementById('semesterFilterBtn');
-            
-            if (!float_columns || float_columns.length === 0) {
-                floatContainer.style.display = 'none';
-                semesterBtn.style.display = 'none';
-                return;
-            }
-            
-            // Keep the container hidden by default - only show when button is clicked
-            floatContainer.style.display = 'none';
-            semesterBtn.style.display = 'block';
-            showPassFailOptions();
-        }
-        
-        function showPassFailOptions() {
-            const container = document.getElementById('floatFilterButtons');
-            container.innerHTML = '';
-            
-            // Create Pass button
-            const passBtn = document.createElement('button');
-            passBtn.type = 'button';
-            passBtn.className = 'filter-btn';
-            passBtn.textContent = '✅ Pass';
-            passBtn.onclick = () => showSemesterSelection('pass');
-            container.appendChild(passBtn);
-            
-            // Create Fail button
-            const failBtn = document.createElement('button');
-            failBtn.type = 'button';
-            failBtn.className = 'filter-btn';
-            failBtn.textContent = '❌ Fail';
-            failBtn.onclick = () => showSemesterSelection('fail');
-            container.appendChild(failBtn);
-        }
-        
-        function showSemesterSelection(passFailType) {
-            const container = document.getElementById('floatFilterButtons');
-            container.innerHTML = '';
-            
-            // Create a wrapper div for back button
-            const backWrapper = document.createElement('div');
-            backWrapper.style.marginBottom = '15px';
-            
-            // Create Back button
-            const backBtn = document.createElement('button');
-            backBtn.type = 'button';
-            backBtn.className = 'back-btn';
-            backBtn.textContent = '◀ Back to Pass/Fail';
-            backBtn.onclick = function(e) {
-                e.preventDefault();
-                showPassFailOptions();
-            };
-            backWrapper.appendChild(backBtn);
-            container.appendChild(backWrapper);
-            
-            // Create semester buttons
-            float_columns.forEach(floatCol => {
-                const semNum = floatCol.replace('Float_', '');
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'filter-btn';
-                if (passFailType === 'pass') {
-                    btn.textContent = `✅ Semester ${semNum} - Pass`;
-                    btn.onclick = function(e) {
-                        e.preventDefault();
-                        applyFloatFilter('float_pass', floatCol);
-                    };
-                } else {
-                    btn.textContent = `❌ Semester ${semNum} - Fail`;
-                    btn.onclick = function(e) {
-                        e.preventDefault();
-                        applyFloatFilter('float_fail', floatCol);
-                    };
-                }
-                container.appendChild(btn);
-            });
-        }
-        
-        function applyFloatFilter(filterType, floatColumn) {
-            const payload = {
-                filter_type: filterType,
-                float_column: floatColumn,
-                page: 1,
-                per_page: 10
-            };
-            
-            showLoading(true);
-            currentFilterType = filterType;
-            
-            fetch('/filter', {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            })
             .then(response => response.json())
             .then(data => {
-                showLoading(false);
-                
                 if (data.success) {
-                    displayResults(data.data, data.filter_description, data.page, data.per_page, data.total_pages, data.total_rows);
-                    // Hide semester filter section after applying filter
-                    document.getElementById('floatFilterContainer').style.display = 'none';
-                    document.getElementById('subjectSelector').style.display = 'none';
+                    showAlert(data.message, 'info');
+                    const eventSource = new EventSource('/conversion-stream');
+
+                    eventSource.onmessage = function(event) {
+                        if (event.data.startsWith('Processing page')) {
+                            showAlert(event.data, 'info');
+                        } else if (event.data === 'done') {
+                            showLoading(false);
+                            showAlert('Conversion successful! Your file is ready to be downloaded.', 'success');
+                            eventSource.close();
+                            // Trigger download
+                            window.location.href = '/download_converted';
+                        } else {
+                            showAlert(event.data, 'info');
+                        }
+                    };
+
+                    eventSource.onerror = function(err) {
+                        showLoading(false);
+                        showAlert('Error during conversion. Please check the console for details.', 'error');
+                        eventSource.close();
+                    };
                 } else {
+                    showLoading(false);
                     showAlert(data.message, 'error');
                 }
             })
             .catch(error => {
                 showLoading(false);
-                showAlert('Error applying filter: ' + error, 'error');
+                showAlert('Error uploading files: ' + (error.message || error), 'error');
             });
         }
-        
-        function applySubjectFilter() {
-            const subject = document.getElementById('subjectSelect').value;
-            if (!subject) {
-                showAlert('Please select a subject', 'error');
-                return;
-            }
-            applyFilter(currentFilterType, subject);
-        }
-        
-        function applyFilter(filterType, subject = null, page = 1, per_page = 10) {
-            const payload = {
-                filter_type: filterType,
-                page: page,
-                per_page: per_page
-            };
             
-            if (subject) {
-                payload.subject = subject;
-            }
+                </script>
             
-            // Hide semester filters when switching to other filters
-            document.getElementById('floatFilterContainer').style.display = 'none';
-            document.getElementById('subjectSelector').style.display = 'none';
-            
-            showLoading(true);
-            
-            fetch('/filter', {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            })
-            .then(response => response.json())
-            .then(data => {
-                showLoading(false);
-                
-                if (data.success) {
-                    if (filterType === 'statistics') {
-                        displayStatisticsResults(data.statistics);
-                    } else {
-                        // data now can be paginated; pass pagination metadata
-                        displayResults(data.data, data.filter_description, data.page, data.per_page, data.total_pages, data.total_rows);
-                    }
                     
-                    document.getElementById('subjectSelector').style.display = 'none';
-                } else {
-                    showAlert(data.message, 'error');
-                }
-            })
-            .catch(error => {
-                showLoading(false);
-                showAlert('Error applying filter: ' + error, 'error');
-            });
-        }
-        
-        function displayResults(data, filterDescription, page = 1, per_page = 10, total_pages = 1, total_rows = 0) {
-            document.getElementById('filterDescription').textContent = filterDescription;
-            document.getElementById('statisticsResults').innerHTML = '';
             
-            const resultsSection = document.getElementById('resultsSection');
-            const tableContainer = document.getElementById('tableContainer');
-            const noDataMessage = document.getElementById('noDataMessage');
+                        <!-- Loading Indicator -->
             
-            if (!data || data.length === 0) {
-                tableContainer.style.display = 'none';
-                noDataMessage.style.display = 'block';
-                document.getElementById('paginationControls').style.display = 'none';
-            } else {
-                tableContainer.style.display = 'block';
-                noDataMessage.style.display = 'none';
+                        <div id="loadingIndicator" class="loading">
+            
+                            <div class="spinner"></div>
+            
+                            <p>Processing...</p>
+            
+                        </div>
+            
+                        
+            
+                        <!-- Results Section -->
+            
+                        <div id="resultsSection" class="results-section">
+            
+                            <h2>Results</h2>
+            
+                            <div id="filterDescription" class="filter-description"></div>
+            
+                            
+            
+                            <div id="statisticsResults"></div>
+            
+                            
+            
+                            <div id="tableContainer">
+            
+                                <table id="resultsTable" class="results-table">
+            
+                                    <thead></thead>
+            
+                                    <tbody></tbody>
+            
+                                </table>
+            
+                            </div>
+            
+                            
+            
+                            <div id="noDataMessage" class="no-data" style="display: none;">
+            
+                                No records found matching the filter criteria
+            
+                            </div>
+            
+                            
+            
+                            <div class="button-group">
+            
+                                <div style="display:flex; gap:10px; align-items:center;">
+            
+                                    <button type="button" class="download-btn" onclick="downloadResults('csv')">
+            
+                                        ⬇️ Download CSV
+            
+                                    </button>
+            
+                                    <button type="button" class="download-btn" onclick="downloadResults('pdf')">
+            
+                                        📄 Download PDF
+            
+                                    </button>
+            
+                                </div>
+            
+                                <button type="button" class="clear-btn" onclick="clearSession()">
+            
+                                    🔄 Upload New File
+            
+                                </button>
+            
+                            </div>
+            
+            
+            
+                            <!-- Pagination controls -->
+            
+                            <div id="paginationControls" style="margin-top:15px; display:none; align-items:center; gap:10px;"></div>
+            
+                        </div>
+            
+                    </div>
+            
+                </div>
+            
                 
-                const table = document.getElementById('resultsTable');
-                const thead = table.querySelector('thead');
-                const tbody = table.querySelector('tbody');
-                
-                // Create table header
-                thead.innerHTML = '';
-                const columns = Object.keys(data[0]);
-                const headerRow = document.createElement('tr');
-                columns.forEach(col => {
-                    const th = document.createElement('th');
-                    th.textContent = col;
-                    headerRow.appendChild(th);
-                });
-                thead.appendChild(headerRow);
-                
-                // Create table rows
-                tbody.innerHTML = '';
-                data.forEach(row => {
-                    const tr = document.createElement('tr');
-                    columns.forEach(col => {
-                        const td = document.createElement('td');
-                        td.textContent = row[col];
-                        tr.appendChild(td);
+            
+                <div id="semesterModal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
+            
+                    <div class="modal-content" style="background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 500px; border-radius: 10px;">
+            
+                        <span class="close" onclick="closeModal()" style="color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer;">&times;</span>
+            
+                        <h2>Select Semester</h2>
+            
+                        <p>Up to which semester would you like to see the results?</p>
+            
+                        <select id="semesterSelect" style="width: 100%; padding: 10px; margin-top: 10px; border: 1px solid #ccc; border-radius: 4px;"></select>
+            
+                        <button id="showResultsBtn" class="upload-btn" style="margin-top: 20px;">Show Results</button>
+            
+                    </div>
+            
+                </div>
+            
+                <script>
+            
+                    let subjects = [];
+            
+                    let sem_columns = [];  
+            
+                    let currentFilterType = null;
+            
+                    
+            
+                    // Handle file input change
+            
+                    document.getElementById('fileInput').addEventListener('change', function() {
+            
+                        const file = this.files[0];
+            
+                        if (file) {
+            
+                            document.getElementById('fileName').textContent = `✓ Selected: ${file.name}`;
+            
+                            uploadFile(file);
+            
+                        }
+            
                     });
-                    tbody.appendChild(tr);
-                });
-            }
             
-            resultsSection.style.display = 'block';
-
-            // Render pagination controls
-            renderPagination(page, per_page, total_pages, total_rows);
-        }
-
-        function renderPagination(page, per_page, total_pages, total_rows) {
-            const container = document.getElementById('paginationControls');
-            if (!total_pages || total_pages <= 1) {
-                container.style.display = 'none';
-                return;
-            }
-            container.style.display = 'flex';
-            container.innerHTML = '';
-
-            const prev = document.createElement('button');
-            prev.textContent = '◀ Prev';
-            prev.className = 'filter-btn';
-            prev.disabled = page <= 1;
-            prev.onclick = function() {
-                var sel = document.getElementById('subjectSelect');
-                var subj = (sel && sel.value) ? sel.value : null;
-                applyFilter(currentFilterType, subj, page - 1, per_page);
-            };
-            container.appendChild(prev);
-
-            const info = document.createElement('div');
-            info.style.padding = '10px';
-            info.textContent = 'Page ' + page + ' of ' + total_pages + ' — ' + total_rows + ' rows';
-            container.appendChild(info);
-
-            const next = document.createElement('button');
-            next.textContent = 'Next ▶';
-            next.className = 'filter-btn';
-            next.disabled = page >= total_pages;
-            next.onclick = function() {
-                var sel = document.getElementById('subjectSelect');
-                var subj = (sel && sel.value) ? sel.value : null;
-                applyFilter(currentFilterType, subj, page + 1, per_page);
-            };
-            container.appendChild(next);
-        }
-        
-        function displayStatisticsResults(stats) {
-            const container = document.getElementById('statisticsResults');
-            container.innerHTML = '<h3>Class Statistics</h3>';
+                    
             
-            const statsDiv = document.createElement('div');
-            statsDiv.className = 'stats-grid';
+                    // Handle drag and drop
             
-            for (const [key, value] of Object.entries(stats)) {
-                const card = document.createElement('div');
-                card.className = 'stat-card';
-                card.innerHTML = `
-                    <div class="stat-label">${key}</div>
-                    <div class="stat-value">${value}</div>
-                `;
-                statsDiv.appendChild(card);
-            }
+                    const uploadBox = document.querySelector('.upload-box');
             
-            container.appendChild(statsDiv);
-            document.getElementById('resultsSection').style.display = 'block';
-            document.getElementById('tableContainer').style.display = 'none';
-        }
-        
-        function downloadResults(format) {
-            // format: 'csv' or 'pdf'
-            window.location.href = `/download?format=${format}`;
-        }
-        
-        function clearSession() {
-            showLoading(true);
+                    uploadBox.addEventListener('dragover', (e) => {
             
-            fetch('/clear-session', {
-                method: 'POST',
-                credentials: 'same-origin'
-            })
-            .then(response => response.json())
-            .then(data => {
-                showLoading(false);
-                if (data.success) {
-                    location.reload();
-                } else {
-                    showAlert(data.message, 'error');
-                }
-            })
-            .catch(error => {
-                showLoading(false);
-                showAlert('Error: ' + error, 'error');
-            });
-        }
-        
-        function showLoading(show) {
-            document.getElementById('loadingIndicator').style.display = show ? 'block' : 'none';
-        }
-    </script>
-</body>
-</html>
+                        e.preventDefault();
+            
+                        uploadBox.style.borderColor = '#764ba2';
+            
+                        uploadBox.style.background = '#f0f2ff';
+            
+                    });
+            
+                    
+            
+                    uploadBox.addEventListener('dragleave', () => {
+            
+                        uploadBox.style.borderColor = '#667eea';
+            
+                        uploadBox.style.background = '#f8f9ff';
+            
+                    });
+            
+                    
+            
+                    uploadBox.addEventListener('drop', (e) => {
+            
+                        e.preventDefault();
+            
+                        uploadBox.style.borderColor = '#667eea';
+            
+                        uploadBox.style.background = '#f8f9ff';
+            
+                        const file = e.dataTransfer.files[0];
+            
+                        if (file) {
+            
+                            document.getElementById('fileInput').files = e.dataTransfer.files;
+            
+                            document.getElementById('fileName').textContent = `✓ Selected: ${file.name}`;
+            
+                            uploadFile(file);
+            
+                        }
+            
+                    });
+            
+                    
+            
+                    function showAlert(message, type = 'info') {
+            
+                        const alert = document.getElementById('alertMessage');
+            
+                        alert.textContent = message;
+            
+                        alert.className = `alert ${type}`;
+            
+                        alert.style.display = 'block';
+            
+                        setTimeout(() => {
+            
+                            alert.style.display = 'none';
+            
+                        }, 5000);
+            
+                    }
+            
+                    
+            
+                    function uploadFile(file) {
+            
+                        const formData = new FormData();
+            
+                        formData.append('file', file);
+            
+                        
+            
+                        showLoading(true);
+            
+                        
+            
+                        fetch('/upload', {
+            
+                            method: 'POST',
+            
+                            body: formData,
+            
+                            credentials: 'same-origin'
+            
+                        })
+            
+                        .then(async response => {
+            
+                            showLoading(false);
+            
+                            let payload = null;
+            
+                            try {
+            
+                                payload = await response.json();
+            
+                            } catch (err) {
+            
+                                const text = await response.text().catch(() => 'Unknown server response');
+            
+                                showAlert(`Upload failed: ${response.status} ${response.statusText} - ${text}`, 'error');
+            
+                                return;
+            
+                            }
+            
+            
+            
+                            if (!response.ok) {
+            
+                                const msg = payload && payload.message ? payload.message : `Upload failed: ${response.status} ${response.statusText}`;
+            
+                                showAlert(msg, 'error');
+            
+                                return;
+            
+                            }
+            
+            
+            
+                            const data = payload;
+            
+                            if (data.success) {
+            
+                                showAlert('File uploaded successfully! Please select subjects.', 'success');
+            
+                                subjects = data.data.subjects;
+            
+                                sem_columns = data.data.sem_columns || [];
+            
+            
+            
+                                document.getElementById('upload-section').style.display = 'none';
+            
+                                
+            
+                                const subjectCheckboxes = document.getElementById('subjectCheckboxes');
+            
+                                subjectCheckboxes.innerHTML = '';
+            
+                                subjects.forEach(subject => {
+            
+                                    const checkboxDiv = document.createElement('div');
+            
+                                    checkboxDiv.innerHTML = `<label><input type="checkbox" name="subject" value="${subject}" checked> ${subject}</label>`;
+            
+                                    subjectCheckboxes.appendChild(checkboxDiv);
+            
+                                });
+            
+            
+            
+                                document.getElementById('subjectSelectionSection').style.display = 'block';
+            
+                            } else {
+            
+                                const msg = data && data.message ? data.message : 'Upload failed';
+            
+                                showAlert(msg, 'error');
+            
+                            }
+            
+                        })
+            
+                        .catch(error => {
+            
+                            showLoading(false);
+            
+                            showAlert('Error uploading file: ' + (error.message || error), 'error');
+            
+                        });
+            
+                    }
+            
+            
+            
+                    function loadData() {
+            
+                        const checkboxes = document.querySelectorAll('#subjectCheckboxes input[name="subject"]:checked');
+            
+                        const selectedSubjects = Array.from(checkboxes).map(cb => cb.value);
+            
+            
+            
+                        if (selectedSubjects.length === 0) {
+            
+                            showAlert('Please select at least one subject.', 'error');
+            
+                            return;
+            
+                        }
+            
+            
+            
+                        showLoading(true);
+            
+            
+            
+                        fetch('/load_data', {
+            
+                            method: 'POST',
+            
+                            headers: {
+            
+                                'Content-Type': 'application/json'
+            
+                            },
+            
+                            body: JSON.stringify({ subjects: selectedSubjects }),
+            
+                            credentials: 'same-origin'
+            
+                        })
+            
+                        .then(response => response.json())
+            
+                        .then(data => {
+            
+                            showLoading(false);
+            
+                            if (data.success) {
+            
+                                showAlert(data.message, 'success');
+            
+                                document.getElementById('subjectSelectionSection').style.display = 'none';
+            
+            
+            
+                                displayStatistics(data.data.statistics);
+            
+                                populateSemFilters();
+            
+                                document.getElementById('filterSection').style.display = 'block';
+            
+                                document.getElementById('statisticsSection').style.display = 'block';
+            
+                            } else {
+            
+                                showAlert(data.message, 'error');
+            
+                            }
+            
+                        })
+            
+                        .catch(error => {
+            
+                            showLoading(false);
+            
+                            showAlert('Error loading data: ' + error, 'error');
+            
+                        });
+            
+                    }
+            
+            
+            
+                    function selectAllSubjects(checked) {
+            
+                        document.querySelectorAll('#subjectCheckboxes input[name="subject"]').forEach(checkbox => {
+            
+                            checkbox.checked = checked;
+            
+                        });
+            
+                    }
+            
+                    
+            
+                    function displayStatistics(stats) {
+            
+                        const container = document.getElementById('statisticsContainer');
+            
+                        container.innerHTML = '';
+            
+                        
+            
+                        for (const [key, value] of Object.entries(stats)) {
+            
+                            const card = document.createElement('div');
+            
+                            card.className = 'stat-card';
+            
+                            card.innerHTML = `
+            
+                                <div class="stat-label">${key}</div>
+            
+                                <div class="stat-value">${value}</div>
+            
+                            `;
+            
+                            container.appendChild(card);
+            
+                        }
+            
+                    }
+            
+                    
+            
+                    function showSubjectFilter(filterType) {
+            
+                        currentFilterType = filterType;
+            
+                        const selector = document.getElementById('subjectSelector');
+            
+                        const select = document.getElementById('subjectSelect');
+            
+                        
+            
+                        document.getElementById('semFilterContainer').style.display = 'none';
+            
+                        
+            
+                        selector.style.display = 'block';
+            
+                        select.innerHTML = '<option value="">-- Choose Subject --</option>';
+            
+                        
+            
+                        subjects.forEach(subject => {
+            
+                            const option = document.createElement('option');
+            
+                            option.value = subject;
+            
+                            option.textContent = subject;
+            
+                            select.appendChild(option);
+            
+                        });
+            
+                    }
+            
+                    
+            
+                    function toggleSemesterFilters() {
+            
+                        const semContainer = document.getElementById('semFilterContainer');
+            
+                        const resultsSection = document.getElementById('resultsSection');
+            
+                        const subjectSelector = document.getElementById('subjectSelector');
+            
+                        
+            
+                        if (semContainer.style.display === 'none' || semContainer.style.display === '') {
+            
+                            semContainer.style.display = 'block';
+            
+                            resultsSection.style.display = 'none';
+            
+                            subjectSelector.style.display = 'none';
+            
+                            semContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            
+                        } else {
+            
+                            semContainer.style.display = 'none';
+            
+                        }
+            
+                    }
+            
+                    
+            
+                    function populateSemFilters() {
+            
+                        const container = document.getElementById('semFilterButtons');
+            
+                        const semContainer = document.getElementById('semFilterContainer');
+            
+                        const semesterBtn = document.getElementById('semesterFilterBtn');
+            
+                        
+            
+                        if (!sem_columns || sem_columns.length === 0) {
+            
+                            semContainer.style.display = 'none';
+            
+                            semesterBtn.style.display = 'none';
+            
+                            return;
+            
+                        }
+            
+                        
+            
+                        semContainer.style.display = 'none';
+            
+                        semesterBtn.style.display = 'block';
+            
+                        showPassFailOptions();
+            
+                    }
+            
+                    
+            
+                    function showPassFailOptions() {
+            
+                        const container = document.getElementById('semFilterButtons');
+            
+                        container.innerHTML = '';
+            
+                        
+            
+                        const passBtn = document.createElement('button');
+            
+                        passBtn.type = 'button';
+            
+                        passBtn.className = 'filter-btn';
+            
+                        passBtn.textContent = '✅ Pass';
+            
+                        passBtn.onclick = () => showSemesterSelection('pass');
+            
+                        container.appendChild(passBtn);
+            
+                        
+            
+                        const failBtn = document.createElement('button');
+            
+                        failBtn.type = 'button';
+            
+                        failBtn.className = 'filter-btn';
+            
+                        failBtn.textContent = '❌ Fail';
+            
+                        failBtn.onclick = () => showSemesterSelection('fail');
+            
+                        container.appendChild(failBtn);
+            
+                    }
+            
+                    
+            
+                    function showSemesterSelection(passFailType) {
+            
+                        const container = document.getElementById('semFilterButtons');
+            
+                        container.innerHTML = '';
+            
+                        
+            
+                        const backWrapper = document.createElement('div');
+            
+                        backWrapper.style.marginBottom = '15px';
+            
+                        
+            
+                        const backBtn = document.createElement('button');
+            
+                        backBtn.type = 'button';
+            
+                        backBtn.className = 'back-btn';
+            
+                        backBtn.textContent = '◀ Back to Pass/Fail';
+            
+                        backBtn.onclick = function(e) {
+            
+                            e.preventDefault();
+            
+                            showPassFailOptions();
+            
+                        };
+            
+                        backWrapper.appendChild(backBtn);
+            
+                        container.appendChild(backWrapper);
+            
+                        
+            
+                        sem_columns.forEach(semCol => {
+            
+                            const semNum = semCol.replace('sem-', '');
+            
+                            const btn = document.createElement('button');
+            
+                            btn.type = 'button';
+            
+                            btn.className = 'filter-btn';
+            
+                            if (passFailType === 'pass') {
+            
+                                btn.textContent = `✅ Semester ${semNum} - Pass`;
+            
+                                btn.onclick = function(e) {
+            
+                                    e.preventDefault();
+            
+                                    applySemFilter('sem_pass', semCol);
+            
+                                };
+            
+                            } else {
+            
+                                btn.textContent = `❌ Semester ${semNum} - Fail`;
+            
+                                btn.onclick = function(e) {
+            
+                                    e.preventDefault();
+            
+                                    applySemFilter('sem_fail', semCol);
+            
+                                };
+            
+                            }
+            
+                            container.appendChild(btn);
+            
+                        });
+            
+                    }
+            
+                    
+            
+                    function applySemFilter(filterType, semColumn) {
+            
+                        const payload = {
+            
+                            filter_type: filterType,
+            
+                            sem_column: semColumn,
+            
+                            page: 1,
+            
+                            per_page: 10
+            
+                        };
+            
+                        
+            
+                        showLoading(true);
+            
+                        currentFilterType = filterType;
+            
+                        
+            
+                        fetch('/filter', {
+            
+                            method: 'POST',
+            
+                            credentials: 'same-origin',
+            
+                            headers: {
+            
+                                'Content-Type': 'application/json'
+            
+                            },
+            
+                            body: JSON.stringify(payload)
+            
+                        })
+            
+                        .then(response => response.json())
+            
+                        .then(data => {
+            
+                            showLoading(false);
+            
+                            
+            
+                            if (data.success) {
+            
+                                displayResults(data.data, data.filter_description, data.page, data.per_page, data.total_pages, data.total_rows);
+            
+                                document.getElementById('semFilterContainer').style.display = 'none';
+            
+                                document.getElementById('subjectSelector').style.display = 'none';
+            
+                            } else {
+            
+                                showAlert(data.message, 'error');
+            
+                            }
+            
+                        })
+            
+                        .catch(error => {
+            
+                            showLoading(false);
+            
+                            showAlert('Error applying filter: ' + error, 'error');
+            
+                        });
+            
+                    }
+            
+                    
+            
+                    function applySubjectFilter() {
+            
+                        const subject = document.getElementById('subjectSelect').value;
+            
+                        if (!subject) {
+            
+                            showAlert('Please select a subject', 'error');
+            
+                            return;
+            
+                        }
+            
+                        applyFilter(currentFilterType, subject);
+            
+                    }
+            
+                    
+            
+                    function openSemesterModal(filterType) {
+            
+                        currentFilterType = filterType;
+            
+                        const modal = document.getElementById('semesterModal');
+            
+                        const select = document.getElementById('semesterSelect');
+            
+                        select.innerHTML = '';
+            
+            
+            
+                        const allOption = document.createElement('option');
+            
+                        allOption.value = '';
+            
+                        allOption.textContent = 'All Semesters';
+            
+                        select.appendChild(allOption);
+            
+            
+            
+                        fetch('/get_semesters')
+            
+                            .then(response => response.json())
+            
+                            .then(data => {
+            
+                                if (data.success) {
+            
+                                    data.semesters.forEach(sem => {
+            
+                                        const option = document.createElement('option');
+            
+                                        option.value = sem;
+            
+                                        option.textContent = sem.replace('-', ' ').toUpperCase();
+            
+                                        select.appendChild(option);
+            
+                                    });
+            
+                                } else {
+            
+                                    showAlert('Could not load semesters.', 'error');
+            
+                                }
+            
+                            });
+            
+            
+            
+                        modal.style.display = 'block';
+            
+            
+            
+                        document.getElementById('showResultsBtn').onclick = function() {
+            
+                            const selectedSem = select.value;
+            
+                            applyFilter(currentFilterType, null, 1, 10, selectedSem);
+            
+                            closeModal();
+            
+                        };
+            
+                    }
+            
+            
+            
+                    function closeModal() {
+            
+                        document.getElementById('semesterModal').style.display = 'none';
+            
+                    }
+            
+            
+            
+                    window.onclick = function(event) {
+            
+                        const modal = document.getElementById('semesterModal');
+            
+                        if (event.target == modal) {
+            
+                            closeModal();
+            
+                        }
+            
+                    }
+            
+                    
+            
+                    function applyFilter(filterType, subject = null, page = 1, per_page = 10, upto_semester = null) {
+            
+                        if (filterType === 'overall_pass' || filterType === 'overall_fail') {
+            
+                            if (upto_semester === null) {
+            
+                                openSemesterModal(filterType);
+            
+                                return;
+            
+                            }
+            
+                        }
+            
+            
+            
+                        const payload = {
+            
+                            filter_type: filterType,
+            
+                            page: page,
+            
+                            per_page: per_page
+            
+                        };
+            
+                        
+            
+                        if (subject) {
+            
+                            payload.subject = subject;
+            
+                        }
+            
+                        if (upto_semester) {
+            
+                            payload.upto_semester = upto_semester;
+            
+                        }
+            
+                        
+            
+                        document.getElementById('semFilterContainer').style.display = 'none';
+            
+                        document.getElementById('subjectSelector').style.display = 'none';
+            
+                        
+            
+                        showLoading(true);
+            
+                        
+            
+                        fetch('/filter', {
+            
+                            method: 'POST',
+            
+                            credentials: 'same-origin',
+            
+                            headers: {
+            
+                                'Content-Type': 'application/json'
+            
+                            },
+            
+                            body: JSON.stringify(payload)
+            
+                        })
+            
+                        .then(response => response.json())
+            
+                        .then(data => {
+            
+                            showLoading(false);
+            
+                            
+            
+                            if (data.success) {
+            
+                                if (filterType === 'statistics') {
+            
+                                    displayStatisticsResults(data.statistics);
+            
+                                } else {
+            
+                                    displayResults(data.data, data.filter_description, data.page, data.per_page, data.total_pages, data.total_rows);
+            
+                                }
+            
+                                
+            
+                                document.getElementById('subjectSelector').style.display = 'none';
+            
+                            } else {
+            
+                                showAlert(data.message, 'error');
+            
+                            }
+            
+                        })
+            
+                        .catch(error => {
+            
+                            showLoading(false);
+            
+                            showAlert('Error applying filter: ' + error, 'error');
+            
+                        });
+            
+                    }
+            
+                    
+            
+                    function displayResults(data, filterDescription, page = 1, per_page = 10, total_pages = 1, total_rows = 0) {
+            
+                        document.getElementById('filterDescription').textContent = filterDescription;
+            
+                        document.getElementById('statisticsResults').innerHTML = '';
+            
+                        
+            
+                        const resultsSection = document.getElementById('resultsSection');
+            
+                        const tableContainer = document.getElementById('tableContainer');
+            
+                        const noDataMessage = document.getElementById('noDataMessage');
+            
+                        
+            
+                        if (!data || data.length === 0) {
+            
+                            tableContainer.style.display = 'none';
+            
+                            noDataMessage.style.display = 'block';
+            
+                            document.getElementById('paginationControls').style.display = 'none';
+            
+                        } else {
+            
+                            tableContainer.style.display = 'block';
+            
+                            noDataMessage.style.display = 'none';
+            
+                            
+            
+                            const table = document.getElementById('resultsTable');
+            
+                            const thead = table.querySelector('thead');
+            
+                            const tbody = table.querySelector('tbody');
+            
+                            
+            
+                            thead.innerHTML = '';
+            
+                            const columns = Object.keys(data[0]);
+            
+                            const headerRow = document.createElement('tr');
+            
+                            columns.forEach(col => {
+            
+                                const th = document.createElement('th');
+            
+                                th.textContent = col;
+            
+                                headerRow.appendChild(th);
+            
+                            });
+            
+                            thead.appendChild(headerRow);
+            
+                            
+            
+                            tbody.innerHTML = '';
+            
+                            data.forEach(row => {
+            
+                                const tr = document.createElement('tr');
+            
+                                columns.forEach(col => {
+            
+                                    const td = document.createElement('td');
+            
+                                    td.textContent = row[col];
+            
+                                    tr.appendChild(td);
+            
+                                });
+            
+                                tbody.appendChild(tr);
+            
+                            });
+            
+                        }
+            
+                        
+            
+                        resultsSection.style.display = 'block';
+            
+            
+            
+                        renderPagination(page, per_page, total_pages, total_rows);
+            
+                    }
+            
+            
+            
+                    function renderPagination(page, per_page, total_pages, total_rows) {
+            
+                        const container = document.getElementById('paginationControls');
+            
+                        if (!total_pages || total_pages <= 1) {
+            
+                            container.style.display = 'none';
+            
+                            return;
+            
+                        }
+            
+                        container.style.display = 'flex';
+            
+                        container.innerHTML = '';
+            
+            
+            
+                        const prev = document.createElement('button');
+            
+                        prev.textContent = '◀ Prev';
+            
+                        prev.className = 'filter-btn';
+            
+                        prev.disabled = page <= 1;
+            
+                        prev.onclick = function() {
+            
+                            var sel = document.getElementById('subjectSelect');
+            
+                            var subj = (sel && sel.value) ? sel.value : null;
+            
+                            applyFilter(currentFilterType, subj, page - 1, per_page);
+            
+                        };
+            
+                        container.appendChild(prev);
+            
+            
+            
+                        const info = document.createElement('div');
+            
+                        info.style.padding = '10px';
+            
+                        info.textContent = 'Page ' + page + ' of ' + total_pages + ' — ' + total_rows + ' rows';
+            
+                        container.appendChild(info);
+            
+            
+            
+                        const next = document.createElement('button');
+            
+                        next.textContent = 'Next ▶';
+            
+                        next.className = 'filter-btn';
+            
+                        next.disabled = page >= total_pages;
+            
+                        next.onclick = function() {
+            
+                            var sel = document.getElementById('subjectSelect');
+            
+                            var subj = (sel && sel.value) ? sel.value : null;
+            
+                            applyFilter(currentFilterType, subj, page + 1, per_page);
+            
+                        };
+            
+                        container.appendChild(next);
+            
+                    }
+            
+                    
+            
+                    function displayStatisticsResults(stats) {
+            
+                        const container = document.getElementById('statisticsResults');
+            
+                        container.innerHTML = '<h3>Class Statistics</h3>';
+            
+                        
+            
+                        const statsDiv = document.createElement('div');
+            
+                        statsDiv.className = 'stats-grid';
+            
+                        
+            
+                        for (const [key, value] of Object.entries(stats)) {
+            
+                            const card = document.createElement('div');
+            
+                            card.className = 'stat-card';
+            
+                            card.innerHTML = `
+            
+                                <div class="stat-label">${key}</div>
+            
+                                <div class="stat-value">${value}</div>
+            
+                            `;
+            
+                            statsDiv.appendChild(card);
+            
+                        }
+            
+                        
+            
+                        container.appendChild(statsDiv);
+            
+                        document.getElementById('resultsSection').style.display = 'block';
+            
+                        document.getElementById('tableContainer').style.display = 'none';
+            
+                    }
+            
+                    
+            
+                    function downloadResults(format) {
+            
+                        window.location.href = `/download?format=${format}`;
+            
+                    }
+            
+                    
+            
+                    function clearSession() {
+            
+                        showLoading(true);
+            
+                        
+            
+                        fetch('/clear-session', {
+            
+                            method: 'POST',
+            
+                            credentials: 'same-origin'
+            
+                        })
+            
+                        .then(response => response.json())
+            
+                        .then(data => {
+            
+                            showLoading(false);
+            
+                            if (data.success) {
+            
+                                location.reload();
+            
+                            } else {
+            
+                                showAlert(data.message, 'error');
+            
+                            }
+            
+                        })
+            
+                        .catch(error => {
+            
+                            showLoading(false);
+            
+                            showAlert('Error: ' + error, 'error');
+            
+                        });
+            
+                    }
+            
+                    
+            
+                    function showLoading(show) {
+            
+                        document.getElementById('loadingIndicator').style.display = show ? 'block' : 'none';
+            
+                    }
+            
+                </script>
+            
+            </body>
+            
+            </html>
+            
+            

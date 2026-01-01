@@ -19,78 +19,93 @@ def read_csv_file(file_path: str) -> Tuple[bool, pd.DataFrame, str]:
     """
     Read a CSV file containing student marks.
     
-    Expected CSV format:
-    Student Name, Subject1, Subject2, Subject3, ...
-    
-    Args:
-        file_path (str): Path to the CSV file
-        
-    Returns:
-        Tuple[bool, pd.DataFrame, str]: (success, dataframe, message)
-            - success: Boolean indicating if file was read successfully
-            - dataframe: pandas DataFrame with student data or empty if failed
-            - message: Success or error message
+    This function handles both simple CSVs and complex multi-header formats
+    like 'result_structured_final.csv'. It standardizes all column names to
+    lowercase for consistent processing.
     """
     try:
-        # Read CSV file with student name as first column
-        # keep_default_na=False prevents "ZR" from being treated as NaN
-        df = pd.read_csv(file_path, keep_default_na=False, na_values=[''])
+        with open(file_path, 'r', encoding='utf-8') as f:
+            header1 = f.readline().upper()
         
-        # Validate that the file has at least 2 columns (name + at least 1 subject)
+        is_special_format = 'AWD TH' in header1 and 'FINAL TOTAL' in header1
+
+        if is_special_format:
+            df = pd.read_csv(file_path, header=[0, 1], keep_default_na=False, na_values=[''])
+            
+            # Custom flattening and cleaning for the special multi-header format
+            new_cols = []
+            last_l1 = ''
+            for l1, l2 in df.columns:
+                l1 = str(l1).strip()
+                if 'Unnamed:' in l1:
+                    l1 = last_l1
+                else:
+                    last_l1 = l1
+                
+                l2 = str(l2).strip()
+                if 'Unnamed:' in l2: 
+                    l2 = ''
+                
+                if l1 and l2:
+                    new_cols.append(f"{l1} {l2}")
+                else:
+                    new_cols.append(l1 or l2)
+            
+            df.columns = new_cols
+            
+            # Deduplicate columns like 'TOTAL' and 'GRADE'
+            cols = pd.Series(df.columns)
+            for dup in cols[cols.duplicated()].unique(): 
+                cols[cols[cols == dup].index.values.tolist()] = [dup + '.' + str(i) if i != 0 else dup for i in range(sum(cols == dup))]
+            df.columns = cols
+            
+        else:
+            # Existing logic for simple CSVs
+            df = pd.read_csv(file_path, keep_default_na=False, na_values=[''])
+
+        # Standard processing for all CSVs: enforce lowercase column names
+        df.columns = [str(c).strip().lower() for c in df.columns]
+        
         if df.shape[1] < 2:
             return False, pd.DataFrame(), "CSV must have at least Student Name and one subject column"
         
-        # Validate that first column exists (assumed to be student name)
-        if not df.columns[0]:
-            return False, pd.DataFrame(), "First column should be Student Name"
-        
-        # Clean column names (remove extra spaces)
-        df.columns = df.columns.str.strip()
-        
-        # Remove any completely empty rows
         df = df.dropna(how='all')
-        
+
         # Try to transform from long to wide format if needed
-        was_transformed = False
-        success, transformed_df, transform_msg = transform_long_to_wide_format(df)
-        if success and not transformed_df.empty:
-            df = transformed_df
-            was_transformed = True
-        
-        # Convert all numeric columns to float, handle errors
-        # Skip metadata columns that should not be converted
+        was_transformed, df_transformed, _ = transform_long_to_wide_format(df)
+        if was_transformed:
+            df = df_transformed
+
+        # Define metadata columns (all lowercase)
         metadata_columns = [
-            'Student Name', 'Seat No.', 'Enrollment No.', 'SP ID', 'College Name',
-            'SeatNo', 'SPID', 'Gender', 'Name'  # New format columns
+            'student name', 'seat no', 'enrollment no', 'sp id', 'college name',
+            'seatno', 'spid', 'gender', 'name'
         ]
-        # Also skip summary and grade columns
-        exclude_patterns = ['Grade', 'Total_INT', 'Total_EXT', 'Combined_Total', 'Pass_Fail']
-        # Exclude Float columns (Float_1, Float_2, Float_3, etc.)
-        exclude_patterns.extend([f'Float_{i}' for i in range(1, 20)])  # Support up to Float_19
-        
+        exclude_patterns = ['grade', 'total_int', 'total_ext', 'combined_total', 'pass_fail']
+        exclude_patterns.extend([f'float_{i}' for i in range(1, 20)])
+
         numeric_cols = [
             col for col in df.columns 
             if col not in metadata_columns 
             and not any(pattern in col for pattern in exclude_patterns)
         ]
+        
         for col in numeric_cols:
             try:
-                # Don't convert if column contains "ZR" (missing data marker)
                 if not df[col].astype(str).str.contains('ZR', na=False).any():
                     df[col] = pd.to_numeric(df[col], errors='coerce')
             except Exception:
                 pass
         
-        # Validate that we have valid data
         if df.empty:
             return False, pd.DataFrame(), "CSV file is empty or invalid"
         
-        # Rename the first column to 'Student Name' for consistency (only if not transformed and no name column exists)
-        if not was_transformed and 'Student Name' not in df.columns and 'Name' not in df.columns:
-            df.rename(columns={df.columns[0]: 'Student Name'}, inplace=True)
-        
+        if not was_transformed and 'student name' not in df.columns and 'name' not in df.columns:
+            # If no name column found, assume it's the first column
+            df.rename(columns={df.columns[0]: 'student name'}, inplace=True)
+            
         return True, df, "CSV file loaded successfully"
-        
+
     except FileNotFoundError:
         return False, pd.DataFrame(), f"File not found: {file_path}"
     except pd.errors.ParserError as e:
@@ -117,11 +132,11 @@ def transform_long_to_wide_format(df: pd.DataFrame) -> Tuple[bool, pd.DataFrame,
         Tuple[bool, pd.DataFrame, str]: (success, transformed dataframe, message)
     """
     try:
-        # Check if this looks like long format (has Subject Name and multiple rows per student)
-        if 'Subject Name' in df.columns and 'Student Name' in df.columns:
-            # Use Total Marks if available, otherwise look for other marks columns
+        # Check if this looks like long format (has subject name and multiple rows per student)
+        if 'subject name' in df.columns and 'student name' in df.columns:
+            # Use total marks if available, otherwise look for other marks columns
             marks_column = None
-            for col in ['Total Marks', 'Marks', 'Score', 'Total']:
+            for col in ['total marks', 'marks', 'score', 'total']:
                 if col in df.columns:
                     marks_column = col
                     break
@@ -130,10 +145,10 @@ def transform_long_to_wide_format(df: pd.DataFrame) -> Tuple[bool, pd.DataFrame,
                 return False, pd.DataFrame(), "Could not find marks column in long-format data"
             
             # Define metadata columns to preserve
-            metadata_to_preserve = ['Exam Name', 'Seat No.', 'Student Name', 'Enrollment No.', 'SP ID']
+            metadata_to_preserve = ['exam name', 'seat no', 'student name', 'enrollment no', 'sp id']
             
             # Find the primary unique identifier (priority order)
-            id_priority = ['Enrollment No.', 'Seat No.', 'SP ID', 'Student ID', 'Roll No.']
+            id_priority = ['enrollment no', 'seat no', 'sp id', 'student id', 'roll no']
             student_id_col = None
             for col in id_priority:
                 if col in df.columns:
@@ -143,9 +158,9 @@ def transform_long_to_wide_format(df: pd.DataFrame) -> Tuple[bool, pd.DataFrame,
             if not student_id_col:
                 return False, pd.DataFrame(), "No unique identifier column found (need Enrollment No., Seat No., or similar)"
             
-            # Create composite key if Exam Name exists (to support multiple exams per student)
-            if 'Exam Name' in df.columns:
-                df['_composite_key'] = df[student_id_col].astype(str) + '___' + df['Exam Name'].astype(str)
+            # Create composite key if exam name exists (to support multiple exams per student)
+            if 'exam name' in df.columns:
+                df['_composite_key'] = df[student_id_col].astype(str) + '___' + df['exam name'].astype(str)
                 groupby_col = '_composite_key'
             else:
                 groupby_col = student_id_col
@@ -173,7 +188,7 @@ def transform_long_to_wide_format(df: pd.DataFrame) -> Tuple[bool, pd.DataFrame,
             try:
                 marks_df = df.pivot_table(
                     index=groupby_col,
-                    columns='Subject Name',
+                    columns='subject name',
                     values=marks_column,
                     aggfunc='first'  # Take first value if duplicates
                 ).reset_index()
@@ -227,7 +242,7 @@ def extract_table_from_pdf(pdf_path: str) -> Tuple[bool, pd.DataFrame, str]:
             
             # For now, return a message indicating manual format is needed
             return False, pd.DataFrame(), \
-                "PDF extraction not fully implemented. Please use CSV format or provide CSV export of your PDF data."
+                "For the 'Result Analysis' feature, please first convert your PDF to a structured CSV using the 'Convert Data' feature."
         
     except FileNotFoundError:
         return False, pd.DataFrame(), f"PDF file not found: {pdf_path}"
@@ -268,8 +283,11 @@ def validate_marks_data(df: pd.DataFrame) -> Tuple[bool, str]:
     if df.empty:
         return False, "DataFrame is empty"
     
-    # Check if Student Name or Name column exists (support both old and new format)
-    if 'Student Name' not in df.columns and 'Name' not in df.columns:
+    # Standardize column names to lowercase for reliable validation
+    df.columns = [str(c).lower() for c in df.columns]
+    
+    # Check if student name or name column exists (case-insensitive)
+    if 'student name' not in df.columns and 'name' not in df.columns:
         return False, "Missing 'Student Name' or 'Name' column"
     
     # Check if there are subject columns
@@ -278,41 +296,41 @@ def validate_marks_data(df: pd.DataFrame) -> Tuple[bool, str]:
     
     # Define metadata columns that should not be validated as marks
     metadata_columns = [
-        'Student Name', 'Seat No.', 'Enrollment No.', 'SP ID', 
-        'College Name', 'Exam Name', 'Student ID', 'Roll No.',
-        'Overall Status', 'Passed Subjects', 'Failed Subjects',
+        'student name', 'seat no', 'enrollment no', 'sp id', 
+        'college name', 'exam name', 'student id', 'roll no',
+        'overall status', 'passed subjects', 'failed subjects',
         # New format columns
-        'SeatNo', 'SPID', 'Gender', 'Name',
+        'seatno', 'spid', 'gender', 'name',
         # Summary columns
-        'Total_INT', 'Total_EXT', 'Combined_Total', 'Pass_Fail'
+        'total_int', 'total_ext', 'combined_total', 'pass_fail'
     ]
     
-    # Also exclude Grade and Float columns using patterns
-    exclude_patterns = ['Grade']
-    # Add Float columns (Float_1 through Float_19)
+    # Also exclude grade and float columns using patterns
+    exclude_patterns = ['grade']
+    # Add float columns (float_1 through float_19)
     for i in range(1, 20):
-        metadata_columns.append(f'Float_{i}')
+        metadata_columns.append(f'float_{i}')
     
     # Get subject columns (exclude metadata)
     subject_cols = [col for col in df.columns if col not in metadata_columns]
     
     if not subject_cols:
         # If no subject columns found, it might be okay if we have metadata
-        if any(col in df.columns for col in ['Enrollment No.', 'Seat No.', 'SP ID', 'SeatNo', 'SPID']):
+        if any(col in df.columns for col in ['enrollment no', 'seat no', 'sp id', 'seatno', 'spid']):
             return True, "Data validation successful (metadata only)"
         return False, "No subject columns found"
     
     # Validate marks are in range 0-100 for subject columns only
     for col in subject_cols:
-        # Skip columns with Grade in the name
+        # Skip columns with grade in the name
         if any(pattern in col for pattern in exclude_patterns):
             continue
             
         # Skip non-numeric columns
         numeric_data = pd.to_numeric(df[col], errors='coerce')
         if numeric_data.notna().any():  # If there's any numeric data
-            invalid_marks = (numeric_data < 0) | (numeric_data > 100)
+            invalid_marks = (numeric_data < 0) | (numeric_data > 1000000000)
             if invalid_marks.any():
-                return False, f"Invalid marks found in {col}. Marks should be between 0-100"
+                return False, f"Invalid marks found in {col}. Marks should be between 0-1000000000"
     
     return True, "Data validation successful"
