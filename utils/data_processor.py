@@ -92,43 +92,35 @@ class StudentMarksProcessor:
     def calculate_overall_status(self) -> pd.DataFrame:
         """
         Calculates the current overall pass/fail status for each student.
-        This is primarily used for the main statistics.
-        It relies on the 'result' column if present, otherwise falls back
-        to subject marks.
+        It uses a combination of the 'result' column and subject-wise marks.
         """
         result_df = self.df.copy()
-        
-        result_col_name = None
-        if 'result' in result_df.columns:
-            result_col_name = 'result'
-        else:
-            # Try to find a column that contains 'result'
-            candidates = [col for col in result_df.columns if 'result' in col]
-            if candidates:
-                result_col_name = candidates[0]
 
-        # If an official 'result' column is found, use it as the primary indicator
-        if result_col_name:
-            result_df['overall status'] = result_df[result_col_name].apply(
-                lambda x: 'Pass' if 'PASS' in str(x).strip().upper() else 'Fail'
-            )
-        else: # Fallback to subject-based calculation
-            numeric_df = result_df[self.subject_columns].copy()
-            for col in numeric_df.columns:
-                numeric_df[col] = pd.to_numeric(numeric_df[col], errors='coerce')
+        # --- Enhanced Status Calculation ---
 
-            # A student fails if they have a single mark below threshold or a single NaN
-            failed_count = (numeric_df < self.pass_threshold).sum(axis=1) + numeric_df.isna().sum(axis=1)
-            
-            final_status = pd.Series('Pass', index=result_df.index)
-            final_status[failed_count > 0] = 'Fail'
-            result_df['overall status'] = final_status
-
-        # Calculate passed/failed subject counts for information
+        # 1. Normalize subject marks to numeric, coercing errors
         numeric_df = result_df[self.subject_columns].copy()
         for col in numeric_df.columns:
             numeric_df[col] = pd.to_numeric(numeric_df[col], errors='coerce')
-        
+
+        # 2. A student fails if they have any mark below the threshold or a NaN value
+        failed_by_marks = (numeric_df < self.pass_threshold).any(axis=1)
+        failed_by_nan = numeric_df.isna().any(axis=1)
+
+        # 3. Check for an explicit 'FAIL' in the 'result' column
+        failed_by_result_col = pd.Series(False, index=result_df.index)
+        if 'result' in result_df.columns:
+            failed_by_result_col = result_df['result'].str.strip().str.upper() == 'FAIL'
+
+        # 4. Combine all failure conditions
+        is_failed = failed_by_marks | failed_by_nan | failed_by_result_col
+
+        # 5. Determine final status
+        result_df['overall status'] = np.where(is_failed, 'Fail', 'Pass')
+
+        # --- End of Enhanced Calculation ---
+
+        # Calculate passed/failed subject counts for information
         passed_count = (numeric_df >= self.pass_threshold).sum(axis=1)
         failed_count = (numeric_df < self.pass_threshold).sum(axis=1) + numeric_df.isna().sum(axis=1)
 
