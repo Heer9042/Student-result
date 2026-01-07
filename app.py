@@ -9,9 +9,10 @@ Features:
 - View statistics and summaries
 """
 
-from flask import Flask, render_template, request, send_file, jsonify, session, Response, stream_with_context, Response, stream_with_context
+from flask import Flask, render_template, request, send_file, jsonify, session, Response, stream_with_context
 import pandas as pd
 import os
+import shutil
 from datetime import datetime
 from config import UPLOAD_FOLDER, DOWNLOAD_FOLDER, ALLOWED_EXTENSIONS, MAX_FILE_SIZE, SECRET_KEY
 from utils.file_reader import read_student_marks, validate_marks_data
@@ -133,7 +134,12 @@ def initiate_conversion():
         session['pdf_filename'] = pdf_filename
         session['detail_filename'] = detail_filename
         session['converted_file'] = csv_output_filename
-        logger.info("Filenames stored in session.")
+        
+        # New: Store subject configuration
+        session['total_subjects'] = int(request.form.get('total_subjects', 6))
+        session['practical_subjects'] = int(request.form.get('practical_subjects', 4))
+        
+        logger.info(f"Filenames and config (Subjects: {session['total_subjects']}, Practical: {session['practical_subjects']}) stored in session.")
 
         return jsonify({'success': True, 'message': 'Files uploaded successfully. Starting conversion.'})
 
@@ -160,7 +166,16 @@ def conversion_stream():
 
     def generate():
         try:
-            for progress in extract_pdf_to_structured_csv(pdf_filename, detail_filename, csv_output_filename):
+            total_subjects = session.get('total_subjects', 6)
+            practical_subjects = session.get('practical_subjects', 4)
+            
+            for progress in extract_pdf_to_structured_csv(
+                pdf_filename, 
+                detail_filename, 
+                csv_output_filename, 
+                total_subjects=total_subjects, 
+                practical_subjects=practical_subjects
+            ):
                 yield f"data: {progress}\n\n"
             yield f"data: done\n\n"
             logger.info("Conversion stream completed successfully.")
@@ -266,11 +281,13 @@ def load_data():
             return jsonify({'success': False, 'message': 'No data loaded. Please upload a file first.'}), 400
 
         req_json = request.get_json()
-        if not req_json or 'subjects' not in req_json:
-            return jsonify({'success': False, 'message': 'No subjects selected.'}), 400
-
-        selected_subjects = req_json['subjects']
+        selected_subjects = req_json.get('subjects', [])
+        practical_subjects = req_json.get('practical_subjects', [])
+        theory_subjects = req_json.get('theory_subjects', [])
+        
         session['selected_subjects'] = selected_subjects
+        session['practical_subjects'] = practical_subjects
+        session['theory_subjects'] = theory_subjects
 
         uploaded_file = session.get('uploaded_file')
         if not uploaded_file or not os.path.exists(uploaded_file):
@@ -280,12 +297,14 @@ def load_data():
         if not success:
             return jsonify({'success': False, 'message': f'Error reading uploaded file: {msg}'}), 500
 
-        # Initialize processor with only the selected subjects if they exist
-        if selected_subjects:
-            processor = StudentMarksProcessor(df, selected_subjects=selected_subjects)
-        else:
-            processor = StudentMarksProcessor(df)
-            
+        # Initialize processor with categorized subjects
+        processor = StudentMarksProcessor(
+            df, 
+            selected_subjects=selected_subjects,
+            practical_subjects=practical_subjects,
+            theory_subjects=theory_subjects
+        )
+        
         stats = processor.get_overall_statistics()
 
         return jsonify({
@@ -355,7 +374,15 @@ def filter_data():
             return jsonify({'success': False, 'message': f'Error reading uploaded file: {msg}'}), 500
 
         selected_subjects = session.get('selected_subjects', None)
-        processor = StudentMarksProcessor(df, selected_subjects=selected_subjects)
+        practical_subjects = session.get('practical_subjects', None)
+        theory_subjects = session.get('theory_subjects', None)
+        
+        processor = StudentMarksProcessor(
+            df, 
+            selected_subjects=selected_subjects,
+            practical_subjects=practical_subjects,
+            theory_subjects=theory_subjects
+        )
         
         # Parse JSON body safely (avoid exceptions on invalid JSON)
         req_json = request.get_json(silent=True)
@@ -441,6 +468,22 @@ def filter_data():
             # Extract semester number from sem-X
             sem_num = sem_column.replace('sem-', 'Sem ').title()
             filter_description = f"Students who failed {sem_num}"
+        
+        elif filter_type == 'all_practical_pass':
+            filtered_df = processor.filter_by_type('practical', 'pass')
+            filter_description = "Students who passed ALL Practical subjects"
+            
+        elif filter_type == 'all_practical_fail':
+            filtered_df = processor.filter_by_type('practical', 'fail')
+            filter_description = "Students who failed in at least one Practical subject"
+            
+        elif filter_type == 'all_theory_pass':
+            filtered_df = processor.filter_by_type('theory', 'pass')
+            filter_description = "Students who passed ALL Theory subjects"
+            
+        elif filter_type == 'all_theory_fail':
+            filtered_df = processor.filter_by_type('theory', 'fail')
+            filter_description = "Students who failed in at least one Theory subject"
         
         else:
             return jsonify({'success': False, 'message': 'Invalid filter type'}), 400
@@ -576,6 +619,45 @@ def clear_session():
     except Exception as e:
         logger.exception('Exception in clear_session')
         return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
+
+
+@app.route('/clear-cache', methods=['POST'])
+def clear_cache():
+    """
+    Clear all uploaded and downloaded files and reset session.
+    """
+    try:
+        # Clear uploads
+        if os.path.exists(app.config['UPLOAD_FOLDER']):
+            for filename in os.listdir(app.config['UPLOAD_FOLDER']):
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                try:
+                    if os.path.isfile(file_path) or os.path.islink(file_path):
+                        os.unlink(file_path)
+                    elif os.path.isdir(file_path):
+                        shutil.rmtree(file_path)
+                except Exception as e:
+                    logger.error(f'Failed to delete {file_path}. Reason: {e}')
+
+        # Clear downloads
+        if os.path.exists(app.config['DOWNLOAD_FOLDER']):
+            for filename in os.listdir(app.config['DOWNLOAD_FOLDER']):
+                file_path = os.path.join(app.config['DOWNLOAD_FOLDER'], filename)
+                try:
+                    if os.path.isfile(file_path) or os.path.islink(file_path):
+                        os.unlink(file_path)
+                    elif os.path.isdir(file_path):
+                        shutil.rmtree(file_path)
+                except Exception as e:
+                    logger.error(f'Failed to delete {file_path}. Reason: {e}')
+        
+        # Also clear session
+        session.clear()
+        
+        return jsonify({'success': True, 'message': 'Cache files and session cleared successfully.'}), 200
+    except Exception as e:
+        logger.exception('Exception in clear_cache')
+        return jsonify({'success': False, 'message': f'Error clearing cache: {str(e)}'}), 500
 
 
 @app.errorhandler(413)

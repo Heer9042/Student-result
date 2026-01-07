@@ -239,9 +239,10 @@ class ResultParser:
             if self.metadata_df is not None:
                 yield "Merging metadata..."
                 try:
-                    df['SPID'] = df['SPID'].astype(str).str.strip()
+                    df['SPID'] = df['SPID'].apply(lambda x: str(x).strip())
                     self.metadata_df.rename(columns={c: c.upper() for c in self.metadata_df.columns}, inplace=True)
-                    self.metadata_df['SPID'] = self.metadata_df['SPID'].astype(str).str.strip()
+                    if 'SPID' in self.metadata_df.columns:
+                        self.metadata_df['SPID'] = self.metadata_df['SPID'].apply(lambda x: str(x).strip())
                     
                     desired_cols = ['SPID', 'ID', 'CAST', 'NAME', 'ENROLLMENT NO', 'APPLICATION ID']
                     existing_cols = [c for c in desired_cols if c in self.metadata_df.columns]
@@ -265,7 +266,7 @@ class ResultParser:
             yield f"Error: {str(e)}"
             raise
 
-def extract_pdf_to_structured_csv(pdf_path, student_detail_path, csv_path):
+def extract_pdf_to_structured_csv(pdf_path, student_detail_path, csv_path, total_subjects=6, practical_subjects=4):
     """
     Web-friendly generator for PDF extraction.
     Yields progress string updates.
@@ -281,8 +282,14 @@ def extract_pdf_to_structured_csv(pdf_path, student_detail_path, csv_path):
             except Exception as e:
                 yield f"Warning: Could not read metadata: {e}"
 
-        # Default settings: 6 subjects, 4 practicals
-        parser = ResultParser(total_subjects=6, practical_subjects=4, metadata_df=meta_df)
+        # Use provided or default settings
+        parser = ResultParser(
+            total_subjects=total_subjects, 
+            practical_subjects=practical_subjects, 
+            metadata_df=meta_df
+        )
+        
+        yield f"Starting extraction (Total Subjects: {total_subjects}, Practical: {practical_subjects})..."
         
         for update in parser.process_generator(pdf_path, csv_path):
             yield update

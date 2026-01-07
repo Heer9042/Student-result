@@ -63,8 +63,17 @@ def read_csv_file(file_path: str) -> Tuple[bool, pd.DataFrame, str]:
             # Existing logic for simple CSVs
             df = pd.read_csv(file_path, keep_default_na=False, na_values=[''])
 
-        # Standard processing for all CSVs: enforce lowercase column names
-        df.columns = [str(c).strip().lower() for c in df.columns]
+        # Standard processing for all CSVs: enforce lowercase column names and deduplicate
+        new_cols = []
+        for c in df.columns:
+            base_col = str(c).strip().lower()
+            col = base_col
+            counter = 1
+            while col in new_cols:
+                col = f"{base_col}_{counter}"
+                counter += 1
+            new_cols.append(col)
+        df.columns = new_cols
         
         if df.shape[1] < 2:
             return False, pd.DataFrame(), "CSV must have at least Student Name and one subject column"
@@ -79,7 +88,7 @@ def read_csv_file(file_path: str) -> Tuple[bool, pd.DataFrame, str]:
         # Define metadata columns (all lowercase)
         metadata_columns = [
             'student name', 'seat no', 'enrollment no', 'sp id', 'college name',
-            'seatno', 'spid', 'gender', 'name'
+            'seatno', 'spid', 'gender', 'name', 'result', 'overall status', 'id'
         ]
         exclude_patterns = ['grade', 'total_int', 'total_ext', 'combined_total', 'pass_fail']
         exclude_patterns.extend([f'float_{i}' for i in range(1, 20)])
@@ -92,7 +101,7 @@ def read_csv_file(file_path: str) -> Tuple[bool, pd.DataFrame, str]:
         
         for col in numeric_cols:
             try:
-                if not df[col].astype(str).str.contains('ZR', na=False).any():
+                if not df[col].apply(lambda x: 'ZR' in str(x)).any():
                     df[col] = pd.to_numeric(df[col], errors='coerce')
             except Exception:
                 pass
